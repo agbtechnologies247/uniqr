@@ -134,24 +134,24 @@ export const AdminPortal: React.FC = () => {
   return (
     <div className="space-y-6 pb-20 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
       
-      {/* ─── 1. ADMINISTRATION HEADER ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* ─── 1. ADMINISTRATION HEADER (COMPACT ON MOBILE) ─── */}
+      <div className="bg-white p-3.5 sm:p-6 sm:p-8 rounded-xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[#1D4533] font-extrabold text-xs uppercase tracking-wider mb-1">
-            <Shield className="w-4 h-4 text-[#F9D2BA]" />
-            <span>Platform Governance &amp; Control Center</span>
+          <div className="flex items-center gap-1.5 text-[#1D4533] font-extrabold text-[10px] sm:text-xs uppercase tracking-wider mb-0.5 sm:mb-1">
+            <Shield className="w-3.5 h-3.5 text-[#F9D2BA]" />
+            <span>Governance &amp; Control</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
-            Administration
+          <h1 className="text-lg sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
+            Admin
           </h1>
-          <p className="text-xs sm:text-sm text-[#5E3122] mt-0.5 font-medium">
+          <p className="text-[11px] sm:text-sm text-[#5E3122] mt-0.5 font-medium hidden sm:block">
             Manage your organization, team users, security policies and universal entity platform
           </p>
         </div>
 
-        <div className="p-3 rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] text-xs font-bold text-[#1D4533] shrink-0">
-          <span className="text-[10px] uppercase text-[#5E3122] block font-extrabold">Organization</span>
-          <span>AGB Technologies Pvt. Ltd. (ID: ORG-0012)</span>
+        <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] text-[11px] sm:text-xs font-bold text-[#1D4533] shrink-0">
+          <span className="text-[9px] sm:text-[10px] uppercase text-[#5E3122] block font-extrabold">Organization</span>
+          <span>AGB Technologies Pvt. Ltd.</span>
         </div>
       </div>
 

@@ -74,25 +74,25 @@ export const EcosystemGraph: React.FC<EcosystemGraphProps> = ({
   return (
     <div className="space-y-6 pb-20 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
       
-      {/* ─── 1. EXECUTIVE HEADER & SCOPE FILTERS ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      {/* ─── 1. EXECUTIVE HEADER & SCOPE FILTERS (COMPACT ON MOBILE) ─── */}
+      <div className="bg-white p-3.5 sm:p-6 sm:p-8 rounded-xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-6">
         <div>
-          <div className="flex items-center gap-2 text-[#1D4533] font-extrabold text-xs uppercase tracking-wider mb-1">
-            <Brain className="w-4 h-4 text-[#F9D2BA]" />
+          <div className="flex items-center gap-1.5 text-[#1D4533] font-extrabold text-[10px] sm:text-xs uppercase tracking-wider mb-0.5 sm:mb-1">
+            <Brain className="w-3.5 h-3.5 text-[#F9D2BA]" />
             <span>Executive Command Center</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
+          <h1 className="text-lg sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
             Intelligence
           </h1>
-          <p className="text-xs sm:text-sm text-[#5E3122] mt-0.5 font-medium">
+          <p className="text-[11px] sm:text-sm text-[#5E3122] mt-0.5 font-medium hidden sm:block">
             Understand what is happening across your UniQR network
           </p>
         </div>
 
         {/* Filters Toolbar */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Time Range Filter */}
-          <div className="flex items-center gap-1 bg-[#F7EAE0] p-1 rounded-2xl border border-[#F9D2BA]">
+          <div className="flex items-center gap-1 bg-[#F7EAE0] p-1 rounded-xl sm:rounded-2xl border border-[#F9D2BA]">
             {(['7d', '30d', '90d', '1y'] as const).map((range) => (
               <button
                 key={range}
@@ -101,7 +101,7 @@ export const EcosystemGraph: React.FC<EcosystemGraphProps> = ({
                   sound.playClick();
                   setTimeRange(range);
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-extrabold transition-all ${
                   timeRange === range
                     ? 'bg-[#1D4533] text-[#F7EAE0] shadow-xs'
                     : 'text-[#5E3122] hover:bg-[#F9D2BA]/50'
@@ -116,7 +116,7 @@ export const EcosystemGraph: React.FC<EcosystemGraphProps> = ({
           <select
             value={entityTypeFilter}
             onChange={(e) => setEntityTypeFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-white border border-[#F9D2BA] text-xs font-bold text-[#1D4533] focus:outline-none focus:border-[#1D4533]"
+            className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl bg-white border border-[#F9D2BA] text-[11px] sm:text-xs font-bold text-[#1D4533] focus:outline-none focus:border-[#1D4533]"
           >
             <option value="All">All Entities</option>
             <option value="Products">Products Only</option>
@@ -128,7 +128,7 @@ export const EcosystemGraph: React.FC<EcosystemGraphProps> = ({
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-white border border-[#F9D2BA] text-xs font-bold text-[#1D4533] focus:outline-none focus:border-[#1D4533]"
+            className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl bg-white border border-[#F9D2BA] text-[11px] sm:text-xs font-bold text-[#1D4533] focus:outline-none focus:border-[#1D4533]"
           >
             <option value="Global">Global Network</option>
             <option value="India">India (Pune / Mumbai)</option>

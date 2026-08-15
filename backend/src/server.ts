@@ -21,6 +21,23 @@ import { createPassportRouter } from './routes/passport.routes.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load .env variables
+const envPath = path.resolve(__dirname, '../.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+      const idx = trimmed.indexOf('=');
+      const key = trimmed.substring(0, idx).trim();
+      const val = trimmed.substring(idx + 1).trim();
+      if (!process.env[key]) {
+        process.env[key] = val;
+      }
+    }
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -281,6 +298,60 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
     uptimeSeconds: process.uptime(),
     memoryUsage: process.memoryUsage(),
     nodeVersion: process.version
+  });
+});
+
+// Industrial QR Sizing & Vector Configuration Endpoint
+app.get('/api/v1/qr/size-presets', (req: Request, res: Response) => {
+  res.json({
+    status: 'SUCCESS',
+    presets: [
+      {
+        id: 'xs',
+        name: 'Extra Small (XS)',
+        targetUseCase: 'Business cards, small product tags, packaging inserts',
+        minimumPrintDimensions: '2.0 × 2.0 cm (0.8 × 0.8 in)',
+        digitalResolution300DPI: '236 × 236 px',
+        quietZoneMargin: '4 modules (~1.5 mm)',
+        pixelSize: 236
+      },
+      {
+        id: 's',
+        name: 'Small (S)',
+        targetUseCase: 'Flyers, brochures, restaurant menus, stickers',
+        minimumPrintDimensions: '3.0 × 3.0 cm (1.2 × 1.2 in)',
+        digitalResolution300DPI: '354 × 354 px',
+        quietZoneMargin: '4 modules (~2.0 mm)',
+        pixelSize: 354
+      },
+      {
+        id: 'm',
+        name: 'Medium (M)',
+        targetUseCase: 'Desktop stands, magazine ads, window decals',
+        minimumPrintDimensions: '5.0 × 5.0 cm (2.0 × 2.0 in)',
+        digitalResolution300DPI: '590 × 590 px',
+        quietZoneMargin: '4 modules (~3.5 mm)',
+        pixelSize: 590
+      },
+      {
+        id: 'l',
+        name: 'Large (L)',
+        targetUseCase: 'Posters, trade show roll-ups, outdoor banners',
+        minimumPrintDimensions: '15.0 × 15.0 cm (6.0 × 6.0 in)',
+        digitalResolution300DPI: '1772 × 1772 px',
+        quietZoneMargin: '4 modules (~10 mm)',
+        pixelSize: 1772
+      },
+      {
+        id: 'xl',
+        name: 'Extra Large (XL)',
+        targetUseCase: 'Billboards, highway signage, building facades',
+        minimumPrintDimensions: '100.0 × 100.0 cm (39.4 × 39.4 in)',
+        digitalResolution300DPI: '11811 × 11811 px',
+        quietZoneMargin: '4 modules (~67 mm)',
+        pixelSize: 11811
+      }
+    ]
   });
 });
 

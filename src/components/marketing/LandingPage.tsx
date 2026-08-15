@@ -15,28 +15,129 @@ interface LandingPageProps {
   onOpenContactSales?: () => void;
 }
 
+interface HeroPreset {
+  id: string;
+  name: string;
+  category: string;
+  icon: string;
+  productName: string;
+  sku: string;
+  brand: string;
+  price: string;
+  status: string;
+}
+
+const HERO_PRESETS: HeroPreset[] = [
+  {
+    id: 'goods',
+    name: 'Manufactured Goods',
+    category: 'Retail Product',
+    icon: '🏋️',
+    productName: 'AERO-X Pro Fitness Dumbbell (20kg)',
+    sku: 'AX-20KG-BLK',
+    brand: 'AERO Fitness Technologies',
+    price: '12,000',
+    status: 'Verified Authentic'
+  },
+  {
+    id: 'machine',
+    name: 'Industrial Machine',
+    category: 'Heavy Asset',
+    icon: '⚙️',
+    productName: 'AGB HydroMax 500 Submersible Pump',
+    sku: 'HM500-IND-2026',
+    brand: 'AGB Industrial Equipment Ltd.',
+    price: '45,000',
+    status: '36-Mo Active Warranty'
+  },
+  {
+    id: 'compliance',
+    name: 'Compliance Certificate',
+    category: 'Official Document',
+    icon: '📜',
+    productName: 'ISO 9001:2015 Quality Certificate',
+    sku: 'ISO-9001-QMS-2026',
+    brand: 'TÜV Rheinland India Pvt. Ltd.',
+    price: 'Compliant',
+    status: 'Cryptographically Stamped'
+  },
+  {
+    id: 'pharma',
+    name: 'Pharma / Cold Chain',
+    category: 'Batch Traceability',
+    icon: '💊',
+    productName: 'BioShield Clinical Vaccine Lot 42',
+    sku: 'LOT-BS-2026-X42',
+    brand: 'BioShield Therapeutics',
+    price: 'Regulated',
+    status: 'Cold-Chain Intact (2-8°C)'
+  },
+  {
+    id: 'executive',
+    name: 'Digital Twin Passport',
+    category: 'Personnel Identity',
+    icon: '🧑‍💼',
+    productName: 'Dr. A. B. Joshi (Chief Operations Officer)',
+    sku: 'EXEC-AGB-0084',
+    brand: 'AGB Technologies Group',
+    price: 'Level 4 Clearance',
+    status: 'Active Pass Credential'
+  }
+];
+
+const QR_PALETTES = [
+  { id: 'emerald', name: 'Forest Emerald', dark: '#1D4533', light: '#F7EAE0' },
+  { id: 'obsidian', name: 'Obsidian Glow', dark: '#0F172A', light: '#F8FAFC' },
+  { id: 'espresso', name: 'Warm Espresso', dark: '#5E3122', light: '#F9D2BA' },
+  { id: 'sapphire', name: 'Deep Sapphire', dark: '#1E3A8A', light: '#EFF6FF' }
+];
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp, onOpenUpgrade, setCurrentTab, onOpenContactSales }) => {
   // Hero Interactive Demo State
+  const [activePresetId, setActivePresetId] = useState<string>('goods');
   const [heroProductName, setHeroProductName] = useState<string>('AERO-X Pro Fitness Dumbbell (20kg)');
+  const [heroSku, setHeroSku] = useState<string>('AX-20KG-BLK');
+  const [heroBrand, setHeroBrand] = useState<string>('AERO Fitness Technologies');
   const [heroPrice, setHeroPrice] = useState<string>('12,000');
+  const [heroStatus, setHeroStatus] = useState<string>('Verified Authentic');
   const [heroCode, setHeroCode] = useState<string>('UQ-8AF92B7A2');
+  const [selectedPalette, setSelectedPalette] = useState(QR_PALETTES[0]);
   const [heroQrUrl, setHeroQrUrl] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
-  // Target URL encodes Product Name & Price query parameters so mobile scan IMMEDIATELY reflects live site inputs
+  // Target URL encodes dynamic parameters so mobile scan reflects live customized inputs
   const targetUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/q/${heroCode}?name=${encodeURIComponent(heroProductName)}&price=${encodeURIComponent(heroPrice)}`
-    : `https://uniqr.agbtechnologies.in/q/${heroCode}?name=${encodeURIComponent(heroProductName)}&price=${encodeURIComponent(heroPrice)}`;
+    ? `${window.location.origin}/q/${heroCode}?name=${encodeURIComponent(heroProductName)}&price=${encodeURIComponent(heroPrice)}&sku=${encodeURIComponent(heroSku)}&brand=${encodeURIComponent(heroBrand)}`
+    : `https://uniqr.agbtechnologies.in/q/${heroCode}?name=${encodeURIComponent(heroProductName)}&price=${encodeURIComponent(heroPrice)}&sku=${encodeURIComponent(heroSku)}&brand=${encodeURIComponent(heroBrand)}`;
+
+  const handleReRollToken = () => {
+    sound.playClick();
+    const chars = '0123456789ABCDEF';
+    let rand = '';
+    for (let i = 0; i < 8; i++) rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    setHeroCode(`UQ-${rand}`);
+  };
+
+  const handleSelectPreset = (preset: HeroPreset) => {
+    sound.playSuccessChime();
+    setActivePresetId(preset.id);
+    setHeroProductName(preset.productName);
+    setHeroSku(preset.sku);
+    setHeroBrand(preset.brand);
+    setHeroPrice(preset.price);
+    setHeroStatus(preset.status);
+    handleReRollToken();
+  };
 
   useEffect(() => {
     QRCode.toDataURL(targetUrl, {
       margin: 1,
-      width: 260,
-      color: { dark: '#1D4533', light: '#F7EAE0' }
+      width: 280,
+      color: { dark: selectedPalette.dark, light: selectedPalette.light }
     })
       .then(url => setHeroQrUrl(url))
       .catch(err => console.error(err));
-  }, [targetUrl, heroProductName, heroPrice]);
+  }, [targetUrl, heroProductName, heroPrice, heroSku, heroBrand, selectedPalette]);
 
   const handleDownloadQr = async (format: 'png' | 'svg') => {
     sound.playClick();
@@ -45,12 +146,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp, onOpenUpg
         const svgString = await QRCode.toString(targetUrl, {
           type: 'svg',
           margin: 1,
-          color: { dark: '#1D4533', light: '#F7EAE0' }
+          color: { dark: selectedPalette.dark, light: selectedPalette.light }
         });
         const blob = new Blob([svgString], { type: 'image/svg+xml' });
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `UniQR-${heroCode}.svg`;
+        link.download = `UniQR-${heroSku || heroCode}.svg`;
         link.href = blobUrl;
         link.click();
         URL.revokeObjectURL(blobUrl);
@@ -60,7 +161,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp, onOpenUpg
       }
     }
     const link = document.createElement('a');
-    link.download = `UniQR-${heroCode}.png`;
+    link.download = `UniQR-${heroSku || heroCode}.png`;
     link.href = heroQrUrl;
     link.click();
   };
@@ -70,7 +171,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp, onOpenUpg
     if (navigator.share) {
       navigator.share({
         title: heroProductName,
-        text: `Scan UniQR product identity for ${heroProductName} (₹${heroPrice})`,
+        text: `Scan UniQR product identity for ${heroProductName} (${heroSku})`,
         url: targetUrl
       }).catch(() => {});
     } else {
@@ -111,7 +212,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp, onOpenUpg
               }}
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-base shadow-md hover:scale-105 transition-all flex items-center justify-center gap-2"
             >
-              <span>Launch Product Studio</span>
+              <span>Launch Studio</span>
               <ArrowRight className="w-5 h-5" />
             </button>
             <button
@@ -122,133 +223,325 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp, onOpenUpg
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#5E3122] hover:bg-[#1D4533] text-[#F7EAE0] font-bold text-base transition-all flex items-center justify-center gap-2"
             >
               <QrCode className="w-5 h-5 text-[#F9D2BA]" />
-              <span>Register Product Identity</span>
+              <span>Register Identity</span>
             </button>
           </div>
 
-          {/* GET YOUR QR DEMO WIDGET IN HERO SECTION */}
-          <div className="mt-12 sm:mt-14 max-w-5xl mx-auto bg-white p-5 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-2xl text-left space-y-6">
+          {/* ══════════════════════════════════════════════════════════════════
+              TRANSFORMED INTERACTIVE LIVING IDENTITY & QR STUDIO WIDGET
+          ══════════════════════════════════════════════════════════════════ */}
+          <div className="mt-12 sm:mt-14 max-w-5xl mx-auto bg-white/95 backdrop-blur-xl p-5 sm:p-8 rounded-3xl border-2 border-[#F9D2BA] shadow-2xl text-left space-y-6 relative overflow-hidden">
             
-            {/* Widget Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F9D2BA] pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center font-bold shadow-md shrink-0">
-                  <Sparkles className="w-5 h-5" />
+            {/* Top Accent Glow */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#1D4533] via-[#F9D2BA] to-[#5E3122]" />
+
+            {/* Widget Header & Schema Preset Switcher */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#F9D2BA] pb-5">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center font-bold shadow-md shrink-0 ring-4 ring-[#F7EAE0]">
+                  <Sparkles className="w-6 h-6 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-xl text-[#1D4533]">Get Your QR</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-2xl text-[#1D4533] tracking-tight">Instant Universal QR Studio</h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#1D4533] text-[#F9D2BA] text-[10px] font-mono font-black uppercase tracking-wider">
+                      Live Sandbox
+                    </span>
+                  </div>
                   <p className="text-xs text-[#5E3122] font-semibold mt-0.5">
-                    Customize fields live below to generate your instant scannable UniQR.
+                    Test live schema mapping, customize attributes, and scan on your phone right now.
                   </p>
                 </div>
               </div>
+
+              {/* Token & Reset */}
+              <div className="flex items-center gap-2 self-start md:self-auto">
+                <div className="px-3 py-1.5 rounded-xl bg-[#F7EAE0] border border-[#F9D2BA] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#1D4533]" />
+                  <span className="font-mono text-xs font-black text-[#1D4533]">{heroCode}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleReRollToken}
+                  className="p-2 rounded-xl bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] transition-all border border-[#F9D2BA]"
+                  title="Generate Fresh Unique SHA Token"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Split Builder & UniQR Panel */}
-            <div className="grid lg:grid-cols-12 gap-6 sm:gap-8 items-center">
+            {/* 1-Click Interactive Industry Schema Presets */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#5E3122]">
+                  1. Choose an Industry Schema Preset:
+                </span>
+                <span className="text-[10px] font-bold text-[#1D4533]">1-Click Auto-Mapping</span>
+              </div>
               
-              {/* Left Side: Live Editable Attributes (7 cols) */}
-              <div className="lg:col-span-7 space-y-5 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-[#5E3122] uppercase mb-1">Product Name:</label>
-                    <input
-                      type="text"
-                      value={heroProductName}
-                      onChange={(e) => setHeroProductName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#F7EAE0] border border-[#F9D2BA] text-[#1D4533] font-bold focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
-                    />
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                {HERO_PRESETS.map((preset) => {
+                  const isSelected = activePresetId === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleSelectPreset(preset)}
+                      className={`p-2.5 rounded-2xl border text-left transition-all flex items-center gap-2.5 ${
+                        isSelected
+                          ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-md ring-2 ring-[#F9D2BA]'
+                          : 'bg-[#F7EAE0]/50 border-[#F9D2BA] text-[#5E3122] hover:bg-white'
+                      }`}
+                    >
+                      <span className="text-lg shrink-0">{preset.icon}</span>
+                      <div className="min-w-0">
+                        <span className="text-xs font-black block truncate leading-tight">{preset.name}</span>
+                        <span className={`text-[9px] font-medium block truncate ${isSelected ? 'text-[#F9D2BA]' : 'text-[#5E3122]/80'}`}>
+                          {preset.category}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Split Form & Scannable QR Matrix */}
+            <div className="grid lg:grid-cols-12 gap-6 sm:gap-8 items-start pt-2">
+              
+              {/* Left Side: Live Editable Attributes & Palette Controls (7 cols) */}
+              <div className="lg:col-span-7 space-y-4 text-xs">
+                
+                {/* Core Field Inputs */}
+                <div className="p-4 rounded-2xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-3.5">
+                  <div className="flex items-center justify-between border-b border-[#F9D2BA]/60 pb-2">
+                    <span className="font-extrabold text-xs text-[#1D4533] uppercase tracking-wider">
+                      2. Live Editable Identity Attributes
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      Live Scannable
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-[#5E3122] uppercase mb-1">Price (₹):</label>
-                    <input
-                      type="text"
-                      value={heroPrice}
-                      onChange={(e) => setHeroPrice(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#F7EAE0] border border-[#F9D2BA] text-[#1D4533] font-bold focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-extrabold text-[#5E3122] uppercase mb-1">
+                        Entity / Product Name:
+                      </label>
+                      <input
+                        type="text"
+                        value={heroProductName}
+                        onChange={(e) => setHeroProductName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] font-bold focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
+                        placeholder="Enter entity name..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-[#5E3122] uppercase mb-1">
+                        Primary Identifier (SKU / Serial / Batch):
+                      </label>
+                      <input
+                        type="text"
+                        value={heroSku}
+                        onChange={(e) => setHeroSku(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] font-bold font-mono focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
+                        placeholder="e.g. SKU-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-[#5E3122] uppercase mb-1">
+                        Authority / Brand / Issuer:
+                      </label>
+                      <input
+                        type="text"
+                        value={heroBrand}
+                        onChange={(e) => setHeroBrand(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] font-bold focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
+                        placeholder="e.g. AGB Industrial"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-[#5E3122] uppercase mb-1">
+                        Valuation / Price (₹) / Status:
+                      </label>
+                      <input
+                        type="text"
+                        value={heroPrice}
+                        onChange={(e) => setHeroPrice(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] font-bold focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
+                        placeholder="e.g. 12,000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-[#5E3122] uppercase mb-1">
+                        Security / Ledger Tag:
+                      </label>
+                      <input
+                        type="text"
+                        value={heroStatus}
+                        onChange={(e) => setHeroStatus(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] font-bold focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
+                        placeholder="e.g. SHA-256 Stamped"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* GET MORE FIELDS BUTTON */}
-                <div className="p-4 rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2 font-extrabold text-[#1D4533] text-xs">
-                    <span>Need More Dynamic Fields &amp; Custom Sections?</span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#1D4533] text-[#F7EAE0] text-[10px] font-bold">28+ Field Types</span>
+                {/* Color Palette Selector */}
+                <div className="p-3.5 rounded-2xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-2">
+                  <span className="block text-[11px] font-extrabold text-[#5E3122] uppercase">
+                    3. QR Aesthetic Theme Palette:
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {QR_PALETTES.map((pal) => (
+                      <button
+                        key={pal.id}
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setSelectedPalette(pal);
+                        }}
+                        className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
+                          selectedPalette.id === pal.id
+                            ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-xs'
+                            : 'bg-white border-[#F9D2BA] text-[#5E3122] hover:bg-[#F7EAE0]'
+                        }`}
+                      >
+                        <div
+                          className="w-4 h-4 rounded-full border border-black/20 shrink-0"
+                          style={{ backgroundColor: pal.dark }}
+                        />
+                        <span className="text-[11px] font-bold truncate">{pal.name}</span>
+                      </button>
+                    ))}
                   </div>
-                  <p className="text-xs text-[#5E3122] font-medium leading-relaxed">
-                    Add warranty tracking, batch numbers, certificates, GPS locations, formulas, and tamper-evident event trails in the full workspace.
+                </div>
+
+                {/* Direct Gateway to Full Workspace */}
+                <div className="p-4 rounded-2xl bg-[#1D4533] text-[#F7EAE0] space-y-2.5 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#F9D2BA]">
+                      Need 28+ Custom Section Fields?
+                    </span>
+                    <span className="text-[10px] font-mono font-bold bg-[#F9D2BA] text-[#1D4533] px-2 py-0.5 rounded-full">
+                      BOM • Ledgers • GPS
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#F7EAE0]/85 leading-relaxed">
+                    Instantly load this entity into the full Universal Studio to configure BOM architecture, multi-color palettes, and laser vector downloads.
                   </p>
                   <button
+                    type="button"
                     onClick={() => {
                       sound.playClick();
                       onLaunchApp();
                     }}
-                    className="w-full py-3 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                    className="w-full py-2.5 rounded-xl bg-[#F9D2BA] hover:bg-white text-[#1D4533] font-black text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
                   >
-                    <PlusCircle className="w-4 h-4 text-[#F9D2BA]" />
-                    <span>Get More Fields</span>
+                    <span>🚀 Launch in Full Universal Workspace</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
 
               </div>
 
-              {/* Right Side: UniQR Panel (5 cols) */}
-              <div className="lg:col-span-5 bg-[#F7EAE0] p-5 sm:p-6 rounded-2xl border border-[#F9D2BA] text-center space-y-4 shadow-sm">
-                <div className="flex items-center justify-between border-b border-[#F9D2BA] pb-2">
-                  <div className="text-xs font-extrabold text-[#1D4533] uppercase tracking-wider">UniQR</div>
-                  <span className="px-2 py-0.5 rounded-full bg-[#1D4533] text-[#F7EAE0] text-[10px] font-mono font-bold">
-                    {heroCode}
+              {/* Right Side: High-Resolution Scannable Live QR Matrix (5 cols) */}
+              <div className="lg:col-span-5 bg-[#F7EAE0] p-5 sm:p-6 rounded-3xl border border-[#F9D2BA] text-center space-y-4 shadow-sm">
+                
+                {/* Badge Header */}
+                <div className="flex items-center justify-between border-b border-[#F9D2BA] pb-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+                    <span className="text-xs font-extrabold text-[#1D4533] uppercase tracking-wider">
+                      Live Scannable QR
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#1D4533] text-[#F9D2BA] text-[10px] font-mono font-extrabold">
+                    {heroSku || heroCode}
                   </span>
                 </div>
                 
+                {/* Live Matrix Canvas Preview with Holographic Container */}
                 {heroQrUrl && (
-                  <div className="bg-white p-3 rounded-xl inline-block border border-[#F9D2BA] shadow-sm">
-                    <img src={heroQrUrl} alt="UniQR Code Matrix" className="w-44 h-44 sm:w-48 sm:h-48 mx-auto rounded-lg" />
+                  <div className="relative group inline-block">
+                    <div className="bg-white p-3.5 rounded-2xl inline-block border-2 border-[#F9D2BA] shadow-lg transition-transform duration-300 group-hover:scale-105">
+                      <img src={heroQrUrl} alt="UniQR Code Matrix" className="w-48 h-48 sm:w-52 sm:h-52 mx-auto rounded-xl" />
+                    </div>
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-[#F9D2BA]/20 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 )}
 
-                <div className="text-[10px] font-mono text-[#5E3122] font-bold truncate">
-                  Scan on mobile to view "{heroProductName}" (₹{heroPrice})
+                {/* Scannable Target Link Preview with 1-Click Open */}
+                <div className="p-3 bg-white rounded-2xl border border-[#F9D2BA] text-center space-y-1.5 shadow-2xs">
+                  <span className="block text-[9px] font-black uppercase text-[#5E3122] tracking-wider">
+                    Scannable Target Identity URL:
+                  </span>
+                  <div className="text-[11px] font-mono text-[#1D4533] font-black truncate bg-[#F7EAE0] px-2 py-1 rounded-lg select-all">
+                    {targetUrl}
+                  </div>
+                  <a
+                    href={targetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#1D4533] hover:text-[#5E3122] underline pt-0.5"
+                  >
+                    <span>🔍 Test Live Passport In New Tab</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </a>
                 </div>
 
-                {/* DOWNLOAD & SHARE OPTIONS */}
+                {/* Direct High-Precision Export & Share Controls */}
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <button
+                    type="button"
                     onClick={() => handleDownloadQr('png')}
-                    className="py-2 bg-white hover:bg-[#F9D2BA] border border-[#F9D2BA] rounded-xl font-extrabold text-[#1D4533] flex items-center justify-center gap-1 shadow-sm transition-all"
+                    className="py-2.5 bg-white hover:bg-[#F9D2BA] border border-[#F9D2BA] rounded-xl font-black text-[#1D4533] flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                    title="Download 1024px PNG image"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Download className="w-3.5 h-3.5 text-[#5E3122]" />
                     <span>PNG</span>
                   </button>
+
                   <button
+                    type="button"
                     onClick={() => handleDownloadQr('svg')}
-                    className="py-2 bg-white hover:bg-[#F9D2BA] border border-[#F9D2BA] rounded-xl font-extrabold text-[#1D4533] flex items-center justify-center gap-1 shadow-sm transition-all"
+                    className="py-2.5 bg-white hover:bg-[#F9D2BA] border border-[#F9D2BA] rounded-xl font-black text-[#1D4533] flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                    title="Download Vector SVG"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Download className="w-3.5 h-3.5 text-[#5E3122]" />
                     <span>SVG</span>
                   </button>
+
                   <button
+                    type="button"
                     onClick={handleShareQr}
-                    className="py-2 bg-white hover:bg-[#F9D2BA] border border-[#F9D2BA] rounded-xl font-extrabold text-[#1D4533] flex items-center justify-center gap-1 shadow-sm transition-all"
+                    className="py-2.5 bg-white hover:bg-[#F9D2BA] border border-[#F9D2BA] rounded-xl font-black text-[#1D4533] flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                    title="Share direct link"
                   >
-                    <Share2 className="w-3.5 h-3.5" />
+                    <Share2 className="w-3.5 h-3.5 text-[#5E3122]" />
                     <span>{copiedLink ? 'Copied!' : 'Share'}</span>
                   </button>
                 </div>
 
-                {/* GENERATE QR ACTION */}
+                {/* Primary CTA: Register In Inventory */}
                 <button
+                  type="button"
                   onClick={() => {
-                    sound.playClick();
+                    sound.playSuccessChime();
                     setCurrentTab('create-product');
                   }}
-                  className="w-full py-3 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs shadow-md flex items-center justify-center gap-2 transition-all"
+                  className="w-full py-3.5 rounded-2xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-black text-xs shadow-md flex items-center justify-center gap-2 transition-all group"
                 >
-                  <Zap className="w-4 h-4 text-[#F9D2BA]" />
-                  <span>Generate QR</span>
+                  <Zap className="w-4 h-4 text-[#F9D2BA] group-hover:rotate-12 transition-transform" />
+                  <span>Register &amp; Save Living Entity</span>
                 </button>
+
               </div>
 
             </div>

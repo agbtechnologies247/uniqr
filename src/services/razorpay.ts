@@ -39,32 +39,75 @@ export const triggerRazorpayCheckout = async (options: RazorpayCheckoutOptions) 
   }
 
   try {
-    // 1. Create order on backend
-    const res = await fetch('/api/v1/billing/create-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        planId: options.planId,
-        amount: options.amountINR
-      })
-    });
-    const orderData = await res.json();
+    let orderData: any = {};
+    try {
+      const res = await fetch('/api/v1/billing/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: options.planId,
+          amount: options.amountINR
+        })
+      });
+      if (res.ok) {
+        orderData = await res.json();
+      }
+    } catch (apiErr) {
+      console.warn('[BILLING API] Proceeding with direct live gateway checkout:', apiErr);
+    }
 
-    const keyId = orderData.keyId || 'rzp_test_TPCo3jpV7G3Kwq';
-    const orderId = orderData.orderId || `order_${Date.now()}`;
+    const keyId = orderData.keyId || 'rzp_live_TQ4RXmcwF6YO6G';
+    const orderId = orderData.orderId; // only defined if backend Orders API created one
 
-    // 2. Open Razorpay Modal
-    const rzp = new window.Razorpay({
+    // 2. Open Razorpay Modal with UPI prioritized first and on Top
+    const checkoutOptions: any = {
       key: keyId,
       amount: Math.round(options.amountINR * 100),
       currency: 'INR',
       name: 'UniQR Platform',
       description: `Subscription Upgrade to ${options.planName}`,
       image: '/logo.jpg',
-      order_id: orderId,
       prefill: {
+        method: 'upi',
         email: options.userEmail || 'agbtechnologies247@gmail.com',
         contact: options.userPhone || '+919049874780'
+      },
+      config: {
+        display: {
+          blocks: {
+            upi: {
+              name: 'Pay via UPI (Google Pay, PhonePe, Paytm, UPI QR)',
+              instruments: [
+                {
+                  method: 'upi'
+                }
+              ]
+            },
+            other: {
+              name: 'Other Payment Modes (Cards, NetBanking, Wallets)',
+              instruments: [
+                {
+                  method: 'card'
+                },
+                {
+                  method: 'netbanking'
+                },
+                {
+                  method: 'wallet'
+                }
+              ]
+            }
+          },
+          sequence: ['block.upi', 'block.other'],
+          preferences: {
+            show_default_blocks: true
+          }
+        }
+      },
+      notes: {
+        planId: options.planId,
+        paymentPreference: 'UPI_FIRST',
+        platform: 'UniQR Enterprise Platform'
       },
       theme: {
         color: '#1D4533'
@@ -94,13 +137,29 @@ export const triggerRazorpayCheckout = async (options: RazorpayCheckoutOptions) 
       },
       modal: {
         ondismiss: () => {
-          console.log('Razorpay modal closed');
+          console.log('[RAZORPAY MODAL DISMISSED] Checkout cancelled by user');
         }
+      }
+    };
+
+    if (orderId) {
+      checkoutOptions.order_id = orderId;
+    }
+
+    const rzp = new window.Razorpay(checkoutOptions);
+
+    rzp.on('payment.failed', function (response: any) {
+      console.error('[RAZORPAY PAYMENT FAILED]', response.error);
+      const errorMsg = response.error?.description || response.error?.reason || 'Payment failed';
+      alert(`Payment Failed: ${errorMsg}`);
+      if (options.onError) {
+        options.onError(response.error);
       }
     });
 
     rzp.open();
   } catch (err: any) {
+    console.error('[RAZORPAY CHECKOUT ERROR]', err);
     if (options.onError) options.onError(err);
   }
 };

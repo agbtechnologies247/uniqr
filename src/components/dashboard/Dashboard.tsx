@@ -47,29 +47,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="space-y-8 pb-20 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
       
-      {/* GREETING & QUOTA BANNER */}
-      <div className="bg-[#1D4533] p-6 sm:p-8 rounded-3xl border border-[#F9D2BA]/30 relative overflow-hidden shadow-md text-[#F7EAE0]">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+      {/* GREETING & QUOTA BANNER (ULTRA-COMPACT ON MOBILE) */}
+      <div className="bg-[#1D4533] p-3.5 sm:p-6 lg:p-8 rounded-xl sm:rounded-3xl border border-[#F9D2BA]/30 relative overflow-hidden shadow-md text-[#F7EAE0]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-6 relative z-10">
           <div>
-            <h1 className="text-2xl sm:text-4xl font-extrabold text-[#F7EAE0]">
-              Dashboard
-            </h1>
-            <p className="text-[#F9D2BA]/90 text-xs sm:text-sm mt-1 font-medium">
-              Manage product identities, track scans, create passports, build intelligance and link applications.
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <h1 className="text-lg sm:text-3xl lg:text-4xl font-extrabold text-[#F7EAE0] leading-tight">
+                Dashboard
+              </h1>
+              <span className="sm:hidden px-2 py-0.5 rounded-full bg-[#5E3122] text-[#F9D2BA] text-[10px] font-mono font-bold">
+                {quotaUsed}/{quotaLimit} QRs
+              </span>
+            </div>
+            <p className="text-[#F9D2BA]/90 text-[11px] sm:text-sm mt-0.5 sm:mt-1 font-medium hidden sm:block">
+              Manage product identities, track scans, create passports, build intelligence and link applications.
             </p>
           </div>
 
-          {/* Quota Progress Meter */}
-          <div className="w-full md:w-80 p-4 rounded-2xl bg-[#5E3122] border border-[#F9D2BA]/30">
-            <div className="flex items-center justify-between text-xs mb-2">
+          {/* Quota Progress Meter - Full for Desktop, Slim bar on mobile */}
+          <div className="w-full sm:w-80 p-2 sm:p-4 rounded-lg sm:rounded-2xl bg-[#5E3122] border border-[#F9D2BA]/30">
+            <div className="flex items-center justify-between text-[11px] sm:text-xs mb-1 sm:mb-2">
               <span className="font-semibold text-[#F7EAE0] flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-[#F9D2BA]" />
-                <span>Free Plan Limit</span>
+                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#F9D2BA]" />
+                <span className="hidden sm:inline">Free Plan Limit</span>
+                <span className="sm:hidden">Limit:</span>
               </span>
               <span className="font-bold text-[#F9D2BA]">{quotaUsed} / {quotaLimit} QRs</span>
             </div>
 
-            <div className="w-full h-2.5 bg-[#1D4533] rounded-full overflow-hidden mb-2">
+            <div className="w-full h-1.5 sm:h-2.5 bg-[#1D4533] rounded-full overflow-hidden mb-1 sm:mb-2">
               <div 
                 className={`h-full transition-all duration-500 ${
                   isLimitReached 
@@ -81,85 +87,92 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-[#F7EAE0]/70">10 Lifetime Free Cap</span>
+              <span className="text-[8px] sm:text-[10px] text-[#F7EAE0]/70">Lifetime Free Cap</span>
               <button
+                type="button"
                 onClick={onOpenUpgrade}
-                className="text-[11px] font-bold text-[#F9D2BA] hover:text-[#F7EAE0] flex items-center gap-0.5"
+                className="text-[9px] sm:text-[11px] font-bold text-[#F9D2BA] hover:text-[#F7EAE0] flex items-center gap-0.5"
               >
-                <span>Upgrade to Unlimited</span>
-                <ArrowUpRight className="w-3 h-3" />
+                <span>Upgrade</span>
+                <ArrowUpRight className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* QUICK ACTION TILES */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      {/* QUICK ACTION TILES (COMPACT & ICON-FIRST ON MOBILE) */}
+      <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
         <button
+          type="button"
           onClick={() => setCurrentTab('qr-studio')}
-          className="bg-white p-4 rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-sm hover:border-[#1D4533] transition-all"
+          className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-xs hover:border-[#1D4533] transition-all"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#F9D2BA] text-[#1D4533] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform font-bold">
-            <PlusCircle className="w-6 h-6" />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#F9D2BA] text-[#1D4533] flex items-center justify-center mb-1.5 sm:mb-3 group-hover:scale-110 transition-transform font-bold">
+            <PlusCircle className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <span className="font-bold text-xs text-[#1D4533]">Generate QR</span>
-          <span className="text-[10px] text-[#5E3122] mt-0.5 font-medium">Custom Studio</span>
+          <span className="font-bold text-[11px] sm:text-xs text-[#1D4533] truncate w-full">Generate QR</span>
+          <span className="text-[8px] sm:text-[10px] text-[#5E3122] mt-0.5 font-medium hidden sm:block">Custom Studio</span>
         </button>
 
         <button
+          type="button"
           onClick={onOpenNewProduct}
-          className="bg-white p-4 rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-sm hover:border-[#1D4533] transition-all"
+          className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-xs hover:border-[#1D4533] transition-all"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1D4533] text-[#F7EAE0] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform font-bold">
-            <Package className="w-6 h-6" />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#1D4533] text-[#F7EAE0] flex items-center justify-center mb-1.5 sm:mb-3 group-hover:scale-110 transition-transform font-bold">
+            <Package className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <span className="font-bold text-xs text-[#1D4533]">Add Entity</span>
-          <span className="text-[10px] text-[#5E3122] mt-0.5 font-medium">Single Record</span>
+          <span className="font-bold text-[11px] sm:text-xs text-[#1D4533] truncate w-full">Add Entity</span>
+          <span className="text-[8px] sm:text-[10px] text-[#5E3122] mt-0.5 font-medium hidden sm:block">Single Record</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setCurrentTab('scanner')}
-          className="bg-white p-4 rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-sm hover:border-[#1D4533] transition-all"
+          className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-xs hover:border-[#1D4533] transition-all"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#5E3122] text-[#F7EAE0] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform font-bold">
-            <Camera className="w-6 h-6" />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#5E3122] text-[#F7EAE0] flex items-center justify-center mb-1.5 sm:mb-3 group-hover:scale-110 transition-transform font-bold">
+            <Camera className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <span className="font-bold text-xs text-[#1D4533]">Scan QR</span>
-          <span className="text-[10px] text-[#5E3122] mt-0.5 font-medium">WebRTC Camera</span>
+          <span className="font-bold text-[11px] sm:text-xs text-[#1D4533] truncate w-full">Scan QR</span>
+          <span className="text-[8px] sm:text-[10px] text-[#5E3122] mt-0.5 font-medium hidden sm:block">WebRTC Camera</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setCurrentTab('products')}
-          className="bg-white p-4 rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-sm hover:border-[#1D4533] transition-all"
+          className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-xs hover:border-[#1D4533] transition-all"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#F9D2BA] text-[#1D4533] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform font-bold">
-            <FileSpreadsheet className="w-6 h-6" />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#F9D2BA] text-[#1D4533] flex items-center justify-center mb-1.5 sm:mb-3 group-hover:scale-110 transition-transform font-bold">
+            <FileSpreadsheet className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <span className="font-bold text-xs text-[#1D4533]">Bulk CSV</span>
-          <span className="text-[10px] text-[#5E3122] mt-0.5 font-medium">Import / Export</span>
+          <span className="font-bold text-[11px] sm:text-xs text-[#1D4533] truncate w-full">Bulk CSV</span>
+          <span className="text-[8px] sm:text-[10px] text-[#5E3122] mt-0.5 font-medium hidden sm:block">Import / Export</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setCurrentTab('graph')}
-          className="bg-white p-4 rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-sm hover:border-[#1D4533] transition-all"
+          className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-xs hover:border-[#1D4533] transition-all"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform font-bold">
-            <Network className="w-6 h-6" />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center mb-1.5 sm:mb-3 group-hover:scale-110 transition-transform font-bold">
+            <Network className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <span className="font-bold text-xs text-[#1D4533]">Connected Intelligence</span>
-          <span className="text-[10px] text-[#5E3122] mt-0.5 font-medium">Asset Network</span>
+          <span className="font-bold text-[11px] sm:text-xs text-[#1D4533] truncate w-full">Intelligence</span>
+          <span className="text-[8px] sm:text-[10px] text-[#5E3122] mt-0.5 font-medium hidden sm:block">Asset Network</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setCurrentTab('analytics')}
-          className="bg-white p-4 rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-sm hover:border-[#1D4533] transition-all"
+          className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-[#F9D2BA] flex flex-col items-center text-center group shadow-xs hover:border-[#1D4533] transition-all"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#F7EAE0] text-[#1D4533] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform font-bold">
-            <BarChart3 className="w-6 h-6" />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#F7EAE0] text-[#1D4533] flex items-center justify-center mb-1.5 sm:mb-3 group-hover:scale-110 transition-transform font-bold">
+            <BarChart3 className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <span className="font-bold text-xs text-[#1D4533]">Scan Telemetry</span>
-          <span className="text-[10px] text-[#5E3122] mt-0.5 font-medium">Live Analytics</span>
+          <span className="font-bold text-[11px] sm:text-xs text-[#1D4533] truncate w-full">Analytics</span>
+          <span className="text-[8px] sm:text-[10px] text-[#5E3122] mt-0.5 font-medium hidden sm:block">Live Telemetry</span>
         </button>
       </div>
 

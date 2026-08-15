@@ -1,4 +1,110 @@
 import QRCode from 'qrcode';
+import { DxfExporter } from './dxfExporter';
+
+// Industrial Print & Digital Sizing Presets
+export interface QrSizePreset {
+  id: 'xs' | 's' | 'm' | 'l' | 'xl' | 'web' | 'hd' | '4k' | '8k';
+  name: string;
+  useCase: string;
+  printDimensions: string;
+  digitalResolution: number; // 300 DPI px
+  quietZone: string;
+  badge: string;
+  isPrintPreset?: boolean;
+}
+
+export const QR_SIZE_PRESETS: QrSizePreset[] = [
+  {
+    id: 'xs',
+    name: 'Extra Small (XS)',
+    useCase: 'Business cards, small product tags, packaging inserts',
+    printDimensions: '2.0 × 2.0 cm (0.8 × 0.8 in)',
+    digitalResolution: 236,
+    quietZone: '4 modules (~1.5 mm)',
+    badge: '236 px',
+    isPrintPreset: true
+  },
+  {
+    id: 's',
+    name: 'Small (S)',
+    useCase: 'Flyers, brochures, restaurant menus, stickers',
+    printDimensions: '3.0 × 3.0 cm (1.2 × 1.2 in)',
+    digitalResolution: 354,
+    quietZone: '4 modules (~2.0 mm)',
+    badge: '354 px',
+    isPrintPreset: true
+  },
+  {
+    id: 'm',
+    name: 'Medium (M)',
+    useCase: 'Desktop stands, magazine ads, window decals',
+    printDimensions: '5.0 × 5.0 cm (2.0 × 2.0 in)',
+    digitalResolution: 590,
+    quietZone: '4 modules (~3.5 mm)',
+    badge: '590 px',
+    isPrintPreset: true
+  },
+  {
+    id: 'l',
+    name: 'Large (L)',
+    useCase: 'Posters, trade show roll-ups, outdoor banners',
+    printDimensions: '15.0 × 15.0 cm (6.0 × 6.0 in)',
+    digitalResolution: 1772,
+    quietZone: '4 modules (~10 mm)',
+    badge: '1772 px',
+    isPrintPreset: true
+  },
+  {
+    id: 'xl',
+    name: 'Extra Large (XL)',
+    useCase: 'Billboards, highway signage, building facades',
+    printDimensions: '100.0 × 100.0 cm (39.4 × 39.4 in)',
+    digitalResolution: 11811,
+    quietZone: '4 modules (~67 mm)',
+    badge: '11811 px',
+    isPrintPreset: true
+  },
+  {
+    id: 'web',
+    name: 'Web & App Display',
+    useCase: 'Digital websites, mobile UI screens, responsive widgets',
+    printDimensions: 'Digital Native Display',
+    digitalResolution: 512,
+    quietZone: '2 modules (~10 px)',
+    badge: '512 px',
+    isPrintPreset: false
+  },
+  {
+    id: 'hd',
+    name: 'Standard HD Master',
+    useCase: 'High-definition digital media, presentations, email signatures',
+    printDimensions: '1080p Digital Master',
+    digitalResolution: 1024,
+    quietZone: '4 modules (~20 px)',
+    badge: '1024 px',
+    isPrintPreset: false
+  },
+  {
+    id: '4k',
+    name: 'Ultra 4K Master',
+    useCase: 'Commercial packaging print, vector rasterization, packaging',
+    printDimensions: '4K Ultra High-Definition',
+    digitalResolution: 4096,
+    quietZone: '4 modules (~80 px)',
+    badge: '4096 px',
+    isPrintPreset: false
+  },
+  {
+    id: '8k',
+    name: '8K Industrial Master',
+    useCase: 'Laser cutting, CNC steel engraving, architectural displays',
+    printDimensions: '8K Master Resolution',
+    digitalResolution: 8192,
+    quietZone: '4 modules (~160 px)',
+    badge: '8192 px',
+    isPrintPreset: false
+  }
+];
 
 // High-Entropy Anonymous Security Token Generator
 export const generateHighEntropyToken = (existingCode?: string): string => {
@@ -16,7 +122,7 @@ export const generateHighEntropyToken = (existingCode?: string): string => {
 };
 
 export interface QrRenderOptions {
-  size: number; // e.g. 256, 512, 1024, 2048, 8192
+  size: number;
   fgColor: string;
   bgColor: string;
   transparentBg: boolean;
@@ -36,20 +142,20 @@ export const getQrTargetUrl = (tokenOrCode: string, customUrl?: string): string 
   return `https://uniqr.agbtechnologies.in/q/${encodeURIComponent(tokenOrCode)}`;
 };
 
-// Draw 100% real-time scannable QR code onto canvas using standard QR encoder algorithm
+// Draw 100% real-time scannable QR code onto canvas
 export const drawQrToCanvasAsync = async (
   canvas: HTMLCanvasElement,
   token: string,
   options: QrRenderOptions
 ): Promise<void> => {
   const targetUrl = getQrTargetUrl(token, options.customTargetUrl);
-  const size = options.size;
+  const size = Math.min(options.size, 4096); // Keep in-memory canvas rendering safe
   canvas.width = size;
   canvas.height = size;
 
   await QRCode.toCanvas(canvas, targetUrl, {
     width: size,
-    margin: Math.round(size * 0.05 / (size / 300)),
+    margin: 2,
     color: {
       dark: options.fgColor,
       light: options.transparentBg ? '#00000000' : options.bgColor
@@ -69,7 +175,7 @@ export const generateSVGStringAsync = async (
   const svgStr = await QRCode.toString(targetUrl, {
     type: 'svg',
     width: size,
-    margin: Math.round(size * 0.05 / (size / 300)),
+    margin: 2,
     color: {
       dark: options.fgColor,
       light: options.transparentBg ? '#00000000' : options.bgColor
@@ -87,7 +193,7 @@ export const downloadQrFile = async (
   options: QrRenderOptions
 ) => {
   const filename = `${token}-${options.size}px.${format}`;
-  const targetUrl = `https://uniqr.agbtechnologies.in/q/${token}`;
+  const targetUrl = getQrTargetUrl(token, options.customTargetUrl);
 
   if (format === 'png' || format === 'jpg' || format === 'bmp') {
     const offscreenCanvas = document.createElement('canvas');
@@ -110,6 +216,9 @@ export const downloadQrFile = async (
   if (format === 'svg') {
     fileContent = await generateSVGStringAsync(token, options);
     mimeType = 'image/svg+xml';
+  } else if (format === 'dxf') {
+    fileContent = await DxfExporter.generateDXF(targetUrl, `UNIQR-${token}`);
+    mimeType = 'application/dxf';
   } else if (format === 'pdf') {
     const svg = await generateSVGStringAsync(token, options);
     fileContent = `%PDF-1.4
@@ -133,6 +242,7 @@ ${svg.length + 320}
 %%EOF`;
     mimeType = 'application/pdf';
   } else if (format === 'eps') {
+    const svg = await generateSVGStringAsync(token, options);
     fileContent = `%!PS-Adobe-3.0 EPSF-3.0
 %%BoundingBox: 0 0 ${options.size} ${options.size}
 %%Title: UniQR High Entropy Scannable Token (${token})
@@ -141,9 +251,11 @@ ${svg.length + 320}
 %%EndComments
 /px { 1 1 scale } def
 0 0 ${options.size} ${options.size} rectfill
+${svg}
 %%EOF`;
     mimeType = 'application/postscript';
   } else if (format === 'ai') {
+    const svg = await generateSVGStringAsync(token, options);
     fileContent = `%!PS-Adobe-3.0
 %%Creator: Adobe Illustrator(R) 24.0 / UniQR Vector Engine
 %%Title: (${token}.ai)
@@ -152,48 +264,9 @@ ${svg.length + 320}
 %AI5_BeginPalette
 %AI5_EndPalette
 0 0 ${options.size} ${options.size} rectfill
+${svg}
 %%EOF`;
     mimeType = 'application/illustrator';
-  } else if (format === 'dxf') {
-    fileContent = `0
-SECTION
-2
-HEADER
-9
-$EXTMIN
-10
-0.0
-20
-0.0
-9
-$EXTMAX
-10
-${options.size}.0
-20
-${options.size}.0
-0
-ENDSEC
-0
-SECTION
-2
-ENTITIES
-0
-LINE
-8
-0
-10
-0.0
-20
-0.0
-11
-${options.size}.0
-21
-${options.size}.0
-0
-ENDSEC
-0
-EOF`;
-    mimeType = 'application/dxf';
   }
 
   const blob = new Blob([fileContent], { type: mimeType });

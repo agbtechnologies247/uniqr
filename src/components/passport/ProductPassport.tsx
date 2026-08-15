@@ -20,7 +20,12 @@ import {
   Tag,
   DollarSign,
   Box,
-  BadgeCheck
+  BadgeCheck,
+  Phone,
+  Mail,
+  Globe,
+  FileDown,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Product, TamperEvidentTrailEvent } from '../../types';
 import { TrailLedger } from '../../services/trailLedger';
@@ -254,6 +259,149 @@ export const ProductPassport: React.FC<ProductPassportProps> = ({ product: initi
                 <span className="text-[#1D4533] text-[10px] font-bold">{product.warrantyMonths ? '● Verified' : ''}</span>
               </div>
             </div>
+
+            {/* ─── OFFICIAL ATTACHMENTS & MEDIA SECTION (PDF Upto 10MB, Images Upto 5MB) ─── */}
+            {(product.pdfDocument || (product.galleryImages && product.galleryImages.length > 0)) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Official PDF Document Card */}
+                {product.pdfDocument && (
+                  <div className="p-5 rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] flex flex-col justify-between space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-black text-xs shrink-0">
+                          PDF
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-[#5E3122] block">
+                            Official Verified Document
+                          </span>
+                          <h4 className="font-extrabold text-xs text-[#1D4533] line-clamp-1">
+                            {product.pdfDocument.name}
+                          </h4>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#F9D2BA] text-[#1D4533]">
+                        {(product.pdfDocument.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-[#F9D2BA]">
+                      <a
+                        href={product.pdfDocument.dataUrl}
+                        download={product.pdfDocument.name}
+                        className="flex-1 py-2 px-3 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                      >
+                        <FileDown className="w-4 h-4 text-[#F9D2BA]" />
+                        <span>Download Official PDF</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Gallery Images */}
+                {product.galleryImages && product.galleryImages.length > 0 && (
+                  <div className="p-5 rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-[#5E3122] flex items-center gap-1">
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Verified Asset Photos ({product.galleryImages.length})</span>
+                      </span>
+                      <span className="text-[10px] font-bold text-[#1D4533]">● SHA-256 Anchored</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {product.galleryImages.map((img) => (
+                        <div key={img.id} className="relative rounded-xl border border-[#F9D2BA] overflow-hidden bg-white h-24 group">
+                          <img src={img.dataUrl} alt={img.name} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
+                            <span className="text-[10px] font-bold text-white text-center line-clamp-1">
+                              {img.name}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
+
+            {/* ─── CONTACT CHANNELS & EXTERNAL PORTAL LINKS ─── */}
+            {(product.websiteUrl || product.contactEmail || product.contactPhone) && (
+              <div className="p-5 rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-extrabold text-xs text-[#1D4533] uppercase tracking-wider flex items-center gap-1.5">
+                    <Globe className="w-4 h-4 text-[#1D4533]" />
+                    <span>Verified Contact &amp; Support Channels</span>
+                  </h3>
+                  <span className="text-[10px] font-bold text-[#5E3122]">Authorized Desk</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {product.websiteUrl && (
+                    <a
+                      href={product.websiteUrl.startsWith('http') ? product.websiteUrl : `https://${product.websiteUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-3 rounded-xl bg-white border border-[#F9D2BA] hover:border-[#1D4533] flex items-center gap-2.5 transition-all group"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center shrink-0">
+                        <Globe className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="truncate">
+                        <span className="text-[9px] font-bold text-[#5E3122] block uppercase">Official Portal</span>
+                        <span className="text-xs font-bold text-[#1D4533] group-hover:underline truncate block">Visit Website</span>
+                      </div>
+                    </a>
+                  )}
+
+                  {product.contactEmail && (
+                    <a
+                      href={`mailto:${product.contactEmail}`}
+                      className="p-3 rounded-xl bg-white border border-[#F9D2BA] hover:border-[#1D4533] flex items-center gap-2.5 transition-all group"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center shrink-0">
+                        <Mail className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="truncate">
+                        <span className="text-[9px] font-bold text-[#5E3122] block uppercase">Authorized Email</span>
+                        <span className="text-xs font-bold text-[#1D4533] group-hover:underline truncate block">{product.contactEmail}</span>
+                      </div>
+                    </a>
+                  )}
+
+                  {product.contactPhone && (
+                    <a
+                      href={`tel:${product.contactPhone}`}
+                      className="p-3 rounded-xl bg-white border border-[#F9D2BA] hover:border-[#1D4533] flex items-center gap-2.5 transition-all group"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center shrink-0">
+                        <Phone className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="truncate">
+                        <span className="text-[9px] font-bold text-[#5E3122] block uppercase">Direct Helpline</span>
+                        <span className="text-xs font-bold text-[#1D4533] group-hover:underline truncate block">{product.contactPhone}</span>
+                      </div>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ─── EXTENDED SOP & LONG OPERATIONAL INSTRUCTIONS ─── */}
+            {product.longDescription && (
+              <div className="p-5 rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] space-y-2">
+                <h3 className="font-extrabold text-xs text-[#1D4533] uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-[#1D4533]" />
+                  <span>Standard Operating Procedures &amp; Extended Notes</span>
+                </h3>
+                <p className="text-xs text-[#1D4533] leading-relaxed whitespace-pre-line bg-white p-4 rounded-xl border border-[#F9D2BA]">
+                  {product.longDescription}
+                </p>
+              </div>
+            )}
 
             {/* DYNAMIC BLOCK BUILDER SPECIFICATIONS (TAB 2 CONTENT) */}
             {product.builderSections && product.builderSections.length > 0 && (

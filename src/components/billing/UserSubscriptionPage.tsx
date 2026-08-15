@@ -82,21 +82,135 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
     { feature: 'Support SLA', starter: 'Community', pro: 'Standard Email', biz: 'Priority Email & Chat', factory: '24/7 Phone & Email', ent: 'Dedicated Account Manager' },
   ];
 
-  const handleUpgradeToEnterprise = async () => {
+  const [mobileCompareTab, setMobileCompareTab] = useState<'starter' | 'pro' | 'biz' | 'factory' | 'ent'>('biz');
+
+  const planTiersData = {
+    starter: {
+      id: 'free',
+      name: 'Starter Free',
+      price: '₹0',
+      cycle: 'Lifetime Free',
+      amountINR: 0,
+      desc: 'Basic product identification for testing and personal cataloging.',
+      badge: 'Free',
+      badgeBg: 'bg-[#F7EAE0] text-[#1D4533]',
+      features: [
+        { label: 'Monthly QR Codes', value: '10 QRs (Lifetime)' },
+        { label: 'Export Resolution', value: 'Standard PNG & SVG' },
+        { label: 'Tamper-Evident Ledgers', value: 'Basic View' },
+        { label: 'AI Decision Engine', value: 'Not Included' },
+        { label: 'Scan Analytics', value: 'Basic 7 Days' },
+        { label: 'Intelligence Graph', value: 'Basic Nodes' },
+        { label: 'API Limits', value: '100 req / day' },
+        { label: 'Team Seats', value: '1 User' },
+        { label: 'Support SLA', value: 'Community Support' }
+      ]
+    },
+    pro: {
+      id: 'pro',
+      name: 'Pro Growth',
+      price: '₹399',
+      cycle: 'per month',
+      amountINR: 399,
+      desc: 'Growing businesses needing tamper-evident ledgers & high-res exports.',
+      badge: 'Popular for SMB',
+      badgeBg: 'bg-[#F9D2BA] text-[#1D4533]',
+      features: [
+        { label: 'Monthly QR Codes', value: '50 QRs / month' },
+        { label: 'Export Resolution', value: '8192px Ultra High Res' },
+        { label: 'Tamper-Evident Ledgers', value: '✓ Cryptographic Ledger' },
+        { label: 'AI Decision Engine', value: 'Not Included' },
+        { label: 'Scan Analytics', value: '✓ 30-Day Deep Geo' },
+        { label: 'Intelligence Graph', value: '✓ Relationship Graph' },
+        { label: 'API Limits', value: '5,000 req / day' },
+        { label: 'Team Seats', value: '3 Users' },
+        { label: 'Support SLA', value: 'Standard Email SLA' }
+      ]
+    },
+    biz: {
+      id: 'business',
+      name: 'Business Scale',
+      price: '₹999',
+      cycle: 'per month',
+      amountINR: 999,
+      desc: 'Multi-category manufacturers with AI decision engine & laser vector engraving.',
+      badge: 'Most Popular',
+      badgeBg: 'bg-[#1D4533] text-[#F9D2BA]',
+      features: [
+        { label: 'Monthly QR Codes', value: '500 QRs / month' },
+        { label: 'Export Resolution', value: 'Laser & Vector SVG' },
+        { label: 'Tamper-Evident Ledgers', value: '✓ SHA-256 Audit Trail' },
+        { label: 'AI Decision Engine', value: '✓ Realtime ML Classifier' },
+        { label: 'Scan Analytics', value: '✓ 90-Day Realtime Analytics' },
+        { label: 'Intelligence Graph', value: '✓ Neo4j Graph Cluster' },
+        { label: 'API Limits', value: '50,000 req / day' },
+        { label: 'Team Seats', value: '10 Users' },
+        { label: 'Support SLA', value: 'Priority Email & Chat SLA' }
+      ]
+    },
+    factory: {
+      id: 'factory',
+      name: 'Factory Scale',
+      price: '₹2,999',
+      cycle: 'per month',
+      amountINR: 2999,
+      desc: 'Mass-production assembly plants with 5,000 monthly QRs & 24/7 dedicated SLA.',
+      badge: 'Industrial Scale',
+      badgeBg: 'bg-[#5E3122] text-[#F7EAE0]',
+      features: [
+        { label: 'Monthly QR Codes', value: '5,000 QRs / month' },
+        { label: 'Export Resolution', value: 'Laser & Vector DXF / SVG' },
+        { label: 'Tamper-Evident Ledgers', value: '✓ Merkle Root Attestation' },
+        { label: 'AI Decision Engine', value: '✓ Realtime ML Cluster' },
+        { label: 'Scan Analytics', value: '✓ 1-Year Deep History' },
+        { label: 'Intelligence Graph', value: '✓ Enterprise Topology' },
+        { label: 'API Limits', value: '500,000 req / day' },
+        { label: 'Team Seats', value: '25 Users' },
+        { label: 'Support SLA', value: '24/7 Phone & Email SLA' }
+      ]
+    },
+    ent: {
+      id: 'enterprise',
+      name: 'Enterprise Custom',
+      price: 'Custom',
+      cycle: 'Annual License',
+      amountINR: 9999,
+      desc: 'Full private cloud deployment, dedicated Merkle ledger & custom ERP integration.',
+      badge: 'Custom ERP',
+      badgeBg: 'bg-[#1D4533] text-[#F7EAE0]',
+      features: [
+        { label: 'Monthly QR Codes', value: 'Unlimited Dynamic QRs' },
+        { label: 'Export Resolution', value: 'CAD DXF & Custom Vectors' },
+        { label: 'Tamper-Evident Ledgers', value: '✓ Dedicated Private Merkle' },
+        { label: 'AI Decision Engine', value: '✓ Custom ML Model Tuning' },
+        { label: 'Scan Analytics', value: '✓ Unlimited Realtime Feeds' },
+        { label: 'Intelligence Graph', value: '✓ Dedicated Graph DB Cluster' },
+        { label: 'API Limits', value: 'Dedicated Gateway (No Limit)' },
+        { label: 'Team Seats', value: 'Unlimited Enterprise Users' },
+        { label: 'Support SLA', value: 'Dedicated Account Manager' }
+      ]
+    }
+  };
+
+  const handleUpgradeToPlan = async (planId: string, planName: string, amount: number) => {
     sound.playClick();
+    if (amount === 0) {
+      alert('You are on the Starter Free tier.');
+      return;
+    }
     setIsProcessingUpgrade(true);
     try {
       await triggerRazorpayCheckout({
-        planId: 'plan_enterprise_annual',
-        planName: 'Enterprise Plan',
-        amountINR: 9999,
-        userEmail: 'admin@agbtechnologies.com',
-        userPhone: '9876543210',
+        planId,
+        planName,
+        amountINR: amount,
+        userEmail: 'admin@agbtechnologies.in',
+        userPhone: '+919049874780',
         onSuccess: (paymentId, orderId) => {
           setIsProcessingUpgrade(false);
           setIsCompareModalOpen(false);
           sound.playSuccessChime();
-          alert(`Upgraded to Enterprise! Payment ID: ${paymentId}`);
+          alert(`Payment successful (${paymentId})! ${planName} is now active.`);
         },
         onError: () => {
           setIsProcessingUpgrade(false);
@@ -104,13 +218,12 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
       });
     } catch (e) {
       setIsProcessingUpgrade(false);
-      alert('Payment initialized.');
     }
   };
 
   const handleDownloadReceipt = (inv: typeof billingInvoices[0]) => {
     sound.playClick();
-    const content = `UniQR Tax Invoice\nInvoice ID: ${inv.id}\nDate: ${inv.date}\nDescription: ${inv.description}\nAmount Paid: ${inv.amount}\nStatus: ${inv.status}\nCustomer: AGB Technologies Pvt. Ltd.\nGSTIN: 27AABCA1234F1Z5`;
+    const content = `UniQR Tax Invoice\nInvoice ID: ${inv.id}\nDate: ${inv.date}\nDescription: ${inv.description}\nAmount Paid: ${inv.amount}\nStatus: ${inv.status}\nCustomer: AGB Technologies Pvt. Ltd.\nGSTIN: 27AABCA1234F1Z5\nPayment Mode: UPI / Razorpay`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -121,19 +234,19 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-20 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
+    <div className="space-y-4 sm:space-y-6 pb-24 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
       
-      {/* ─── 1. SUBSCRIPTION HEADER ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* ─── 1. SUBSCRIPTION HEADER (COMPACT ON MOBILE) ─── */}
+      <div className="bg-white p-3.5 sm:p-6 sm:p-8 rounded-xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[#1D4533] font-extrabold text-xs uppercase tracking-wider mb-1">
-            <CreditCard className="w-4 h-4 text-[#F9D2BA]" />
-            <span>Commercial &amp; Billing Workspace</span>
+          <div className="flex items-center gap-1.5 text-[#1D4533] font-extrabold text-[10px] sm:text-xs uppercase tracking-wider mb-0.5 sm:mb-1">
+            <CreditCard className="w-3.5 h-3.5 text-[#F9D2BA]" />
+            <span>Commercial &amp; Billing</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
+          <h1 className="text-lg sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
             Subscription
           </h1>
-          <p className="text-xs sm:text-sm text-[#5E3122] mt-0.5 font-medium">
+          <p className="text-[11px] sm:text-sm text-[#5E3122] mt-0.5 font-medium hidden sm:block">
             Manage your UniQR plan, metered usage and commercial billing
           </p>
         </div>
@@ -145,47 +258,48 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
               sound.playClick();
               setIsCompareModalOpen(true);
             }}
-            className="px-4 py-2.5 rounded-2xl bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-extrabold text-xs border border-[#F9D2BA] shadow-sm transition-all"
+            className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl sm:rounded-2xl bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-extrabold text-xs border border-[#F9D2BA] shadow-sm transition-all flex items-center justify-center gap-1.5"
           >
-            Compare All Plans
+            <Sparkles className="w-3.5 h-3.5 text-[#5E3122]" />
+            <span>Compare All Plans</span>
           </button>
         </div>
       </div>
 
-      {/* ─── 2. CURRENT PLAN CARD ─── */}
-      <div className="bg-[#1D4533] p-6 sm:p-8 rounded-3xl border border-[#F9D2BA]/30 text-[#F7EAE0] shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="space-y-3 z-10">
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-[#F9D2BA] text-[#1D4533] text-[10px] font-black uppercase tracking-wider">
+      {/* ─── 2. CURRENT PLAN CARD (COMPACT ON MOBILE) ─── */}
+      <div className="bg-[#1D4533] p-4 sm:p-6 sm:p-8 rounded-xl sm:rounded-3xl border border-[#F9D2BA]/30 text-[#F7EAE0] shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 relative overflow-hidden">
+        <div className="space-y-2 sm:space-y-3 z-10">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#F9D2BA] text-[#1D4533] text-[9px] sm:text-[10px] font-black uppercase tracking-wider">
               Current Active Plan
             </span>
-            <span className="text-xs text-[#F9D2BA] font-bold">
-              Renews on 15 September 2026 (Auto-Renew Active)
+            <span className="text-[11px] sm:text-xs text-[#F9D2BA] font-bold">
+              Renews on 15 Sept 2026 (Auto-Renew Active)
             </span>
           </div>
 
-          <div className="flex items-baseline gap-3">
-            <h2 className="text-3xl sm:text-4xl font-black text-[#F7EAE0] tracking-tight uppercase">
+          <div className="flex items-baseline gap-2 sm:gap-3">
+            <h2 className="text-2xl sm:text-4xl font-black text-[#F7EAE0] tracking-tight uppercase">
               {currentTierName}
             </h2>
-            <span className="text-xl sm:text-2xl font-bold text-[#F9D2BA]">
-              ₹2,499 <span className="text-xs text-[#F7EAE0]/80 font-normal">/ month</span>
+            <span className="text-lg sm:text-2xl font-bold text-[#F9D2BA]">
+              ₹2,499 <span className="text-[10px] sm:text-xs text-[#F7EAE0]/80 font-normal">/ month</span>
             </span>
           </div>
 
-          <p className="text-xs text-[#F9D2BA]/90 font-medium max-w-xl">
+          <p className="text-[11px] sm:text-xs text-[#F9D2BA]/90 font-medium max-w-xl leading-relaxed">
             Complete platform access with 5,000 dynamic QR codes, 50,000 monthly scans, 25,000 entity twin passports, and REST API access.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 z-10 shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 z-10 shrink-0">
           <button
             type="button"
             onClick={() => {
               sound.playClick();
               setIsCompareModalOpen(true);
             }}
-            className="px-5 py-3 rounded-2xl bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533] font-black text-xs transition-all shadow-sm flex items-center justify-center gap-2"
+            className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533] font-black text-xs transition-all shadow-sm flex items-center justify-center gap-2"
           >
             <span>Change / Upgrade Plan</span>
             <ArrowRight className="w-4 h-4" />
@@ -197,7 +311,7 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
               sound.playClick();
               alert('Redirecting to secure Razorpay Customer Billing Portal...');
             }}
-            className="px-4 py-3 rounded-2xl bg-[#5E3122] hover:bg-[#5E3122]/80 text-[#F7EAE0] font-bold text-xs border border-[#F9D2BA]/30 transition-all text-center"
+            className="px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-[#5E3122] hover:bg-[#5E3122]/80 text-[#F7EAE0] font-bold text-xs border border-[#F9D2BA]/30 transition-all text-center"
           >
             Manage Payment Methods
           </button>
@@ -205,11 +319,11 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
       </div>
 
       {/* ─── 3. HIGH-VISIBILITY METERED RESOURCE GAUGES ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {meteredResources.map((res) => (
           <div
             key={res.title}
-            className="bg-white p-5 sm:p-6 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-3 hover:border-[#1D4533] transition-colors"
+            className="bg-white p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm space-y-2.5 hover:border-[#1D4533] transition-colors"
           >
             <div className="flex items-center justify-between text-xs">
               <span className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px]">
@@ -221,14 +335,14 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
             </div>
 
             <div>
-              <div className="text-xl sm:text-2xl font-black text-[#1D4533]">
+              <div className="text-lg sm:text-2xl font-black text-[#1D4533]">
                 {res.used.toLocaleString()}{' '}
-                <span className="text-xs text-[#5E3122] font-semibold">/ {res.limit.toLocaleString()} {res.unit}</span>
+                <span className="text-[11px] sm:text-xs text-[#5E3122] font-semibold">/ {res.limit.toLocaleString()} {res.unit}</span>
               </div>
             </div>
 
             {/* Visual Progress Meter */}
-            <div className="w-full h-3 bg-[#F7EAE0] rounded-full overflow-hidden border border-[#F9D2BA]">
+            <div className="w-full h-2.5 sm:h-3 bg-[#F7EAE0] rounded-full overflow-hidden border border-[#F9D2BA]">
               <div
                 className="h-full bg-[#1D4533] rounded-full transition-all duration-500"
                 style={{ width: `${res.pct}%` }}
@@ -244,11 +358,11 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
       </div>
 
       {/* ─── 4. PLAN FEATURES CHECKLIST ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F9D2BA] pb-4">
+      <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 border-b border-[#F9D2BA] pb-3 sm:pb-4">
           <div>
-            <h2 className="text-xl font-extrabold text-[#1D4533]">Included Plan Features</h2>
-            <p className="text-xs text-[#5E3122] font-medium mt-0.5">
+            <h2 className="text-base sm:text-xl font-extrabold text-[#1D4533]">Included Plan Features</h2>
+            <p className="text-[11px] sm:text-xs text-[#5E3122] font-medium mt-0.5">
               Everything activated on your active Professional tier license
             </p>
           </div>
@@ -259,23 +373,23 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
               sound.playClick();
               setIsCompareModalOpen(true);
             }}
-            className="text-xs font-extrabold text-[#1D4533] hover:text-[#5E3122] flex items-center gap-1 underline"
+            className="text-xs font-extrabold text-[#1D4533] hover:text-[#5E3122] flex items-center gap-1 underline self-start sm:self-auto"
           >
             <span>Compare Features Across All Tiers</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {planFeatures.map((feat) => (
             <div
               key={feat.text}
-              className="p-3.5 rounded-2xl bg-[#F7EAE0]/50 border border-[#F9D2BA] flex items-start gap-2.5 text-xs"
+              className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#F7EAE0]/50 border border-[#F9D2BA] flex items-start gap-2 text-xs"
             >
-              <div className="w-5 h-5 rounded-full bg-[#1D4533] text-[#F7EAE0] flex items-center justify-center shrink-0 mt-0.5">
-                <Check className="w-3 h-3 text-[#F9D2BA]" />
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#1D4533] text-[#F7EAE0] flex items-center justify-center shrink-0 mt-0.5">
+                <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#F9D2BA]" />
               </div>
-              <span className="font-bold text-[#1D4533] leading-snug">
+              <span className="font-bold text-[#1D4533] leading-snug text-[11px] sm:text-xs">
                 {feat.text}
               </span>
             </div>
@@ -283,14 +397,46 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
         </div>
       </div>
 
-      {/* ─── 5. BILLING HISTORY INVOICE TABLE ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-4">
+      {/* ─── 5. BILLING HISTORY INVOICES (DUAL: TABLE ON DESKTOP, CARDS ON MOBILE) ─── */}
+      <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-[#F9D2BA] pb-3">
-          <h2 className="text-lg font-extrabold text-[#1D4533]">Billing History &amp; Invoices</h2>
-          <span className="text-xs text-[#5E3122] font-semibold">GST Registered Invoices</span>
+          <div>
+            <h2 className="text-base sm:text-lg font-extrabold text-[#1D4533]">Billing History &amp; Invoices</h2>
+            <span className="text-[11px] text-[#5E3122] font-semibold">GST Registered Invoices</span>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* MOBILE VIEW: RESPONSIVE INVOICE CARDS */}
+        <div className="block sm:hidden space-y-3">
+          {billingInvoices.map((inv) => (
+            <div key={inv.id} className="p-3.5 rounded-2xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-[#1D4533] text-[11px]">{inv.id}</span>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  {inv.status}
+                </span>
+              </div>
+              <div>
+                <div className="font-bold text-[#1D4533] text-xs">{inv.description}</div>
+                <div className="text-[10px] text-[#5E3122] font-semibold mt-0.5">Date: {inv.date}</div>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-[#F9D2BA]/60">
+                <span className="font-mono font-extrabold text-sm text-[#1D4533]">{inv.amount}</span>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadReceipt(inv)}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#F9D2BA] text-[#1D4533] font-extrabold text-[11px] border border-[#F9D2BA] flex items-center gap-1.5 shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#1D4533]" />
+                  <span>Download Invoice</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* DESKTOP VIEW: CLEAN TABLE */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-[#F9D2BA] text-[#5E3122] font-extrabold uppercase text-[10px] tracking-wider">
@@ -336,23 +482,23 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
       </div>
 
       {/* ─── 6. ACCOUNT SESSION & DANGER ZONE (LOG OUT & DELETE ACCOUNT) ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-6">
+      <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm space-y-4 sm:space-y-6">
         <div className="border-b border-[#F9D2BA] pb-3">
-          <h2 className="text-xl font-extrabold text-[#1D4533]">Account Identity &amp; Session Management</h2>
-          <p className="text-xs text-[#5E3122] font-medium mt-0.5">
+          <h2 className="text-base sm:text-xl font-extrabold text-[#1D4533]">Account Identity &amp; Session Management</h2>
+          <p className="text-[11px] sm:text-xs text-[#5E3122] font-medium mt-0.5">
             Manage your authenticated session, enterprise organization profile, or close your UniQR account.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           
           {/* Active Session Card */}
-          <div className="p-5 rounded-2xl bg-[#F7EAE0]/40 border border-[#F9D2BA] flex flex-col justify-between space-y-4">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#F7EAE0]/40 border border-[#F9D2BA] flex flex-col justify-between space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-[#5E3122]">Active Session</span>
               <div className="space-y-1">
-                <div className="text-sm font-extrabold text-[#1D4533]">admin@agbtechnologies.in</div>
-                <div className="text-xs text-[#5E3122] font-medium">Organization: AGB Industrial Equipment Ltd.</div>
+                <div className="text-xs sm:text-sm font-extrabold text-[#1D4533]">admin@agbtechnologies.in</div>
+                <div className="text-[11px] sm:text-xs text-[#5E3122] font-medium">Organization: AGB Industrial Equipment Ltd.</div>
                 <div className="text-[10px] text-[#5E3122]/80 font-mono">Last login: Today from Pune, IN (Chrome / Windows)</div>
               </div>
             </div>
@@ -364,7 +510,7 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
                   sound.playClick();
                   if (onLogout) onLogout();
                 }}
-                className="px-5 py-2.5 rounded-xl border border-[#F9D2BA] bg-white hover:bg-[#F9D2BA] text-[#1D4533] font-extrabold text-xs flex items-center gap-2 shadow-xs transition-all"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#F9D2BA] bg-white hover:bg-[#F9D2BA] text-[#1D4533] font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-all"
               >
                 <span>Log Out of Session</span>
               </button>
@@ -372,12 +518,12 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
           </div>
 
           {/* Danger Zone: Delete Account */}
-          <div className="p-5 rounded-2xl bg-red-50/50 border border-red-200 flex flex-col justify-between space-y-4">
+          <div className="p-4 sm:p-5 rounded-2xl bg-red-50/50 border border-red-200 flex flex-col justify-between space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-red-700">Danger Zone</span>
               <div className="space-y-1">
-                <div className="text-sm font-extrabold text-red-900">Delete Organization Account</div>
-                <p className="text-xs text-red-700 leading-relaxed font-medium">
+                <div className="text-xs sm:text-sm font-extrabold text-red-900">Delete Organization Account</div>
+                <p className="text-[11px] sm:text-xs text-red-700 leading-relaxed font-medium">
                   Permanently revokes all active API keys, deletes entity passports, and terminates subscription licenses. This action cannot be reversed.
                 </p>
               </div>
@@ -392,7 +538,7 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
                     if (onLogout) onLogout();
                   }
                 }}
-                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-xs transition-all"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center"
               >
                 <span>Delete Account Permanently</span>
               </button>
@@ -402,15 +548,17 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
         </div>
       </div>
 
-      {/* ─── 6. INTERACTIVE PLAN COMPARISON MODAL ─── */}
+      {/* ─── 7. INTERACTIVE PLAN COMPARISON MODAL (FULL DETAILS FOR MOBILE & DESKTOP) ─── */}
       {isCompareModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-4xl rounded-3xl border border-[#F9D2BA] shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-[#F9D2BA] pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-4xl rounded-2xl sm:rounded-3xl border border-[#F9D2BA] shadow-2xl p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[92vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#F9D2BA] pb-3 sm:pb-4">
               <div>
-                <h3 className="text-2xl font-extrabold text-[#1D4533]">Plan Comparison</h3>
-                <p className="text-xs text-[#5E3122] font-medium mt-0.5">
-                  Understand all features and capacity across UniQR plans
+                <h3 className="text-lg sm:text-2xl font-extrabold text-[#1D4533]">Plan Comparison</h3>
+                <p className="text-[11px] sm:text-xs text-[#5E3122] font-medium mt-0.5">
+                  Complete feature breakdown and limits across UniQR tiers
                 </p>
               </div>
               <button
@@ -422,8 +570,100 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
               </button>
             </div>
 
-            {/* Comparison Table */}
-            <div className="overflow-x-auto">
+            {/* UPI PRIORITY CALLOUT */}
+            <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-[#1D4533] text-[#F7EAE0] flex items-center justify-between gap-2 text-xs shadow-xs border border-[#F9D2BA]/40">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-[#F9D2BA] text-[#1D4533] font-black text-[9px] uppercase tracking-wider shrink-0">
+                  UPI 1st Priority
+                </span>
+                <span className="font-bold text-[10px] sm:text-xs text-[#F7EAE0] truncate">
+                  ⚡ 1-Tap Upgrade via Google Pay, PhonePe, Paytm, Cred &amp; UPI QR
+                </span>
+              </div>
+              <span className="text-[10px] text-[#F9D2BA] font-bold shrink-0 hidden sm:inline-block">
+                Instant Activation
+              </span>
+            </div>
+
+            {/* ─── MOBILE VIEW: FULL DETAILS PLAN CARD & TABS (BLOCK MD:HIDDEN) ─── */}
+            <div className="block md:hidden space-y-4">
+              {/* Horizontal Scrollable Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {(['starter', 'pro', 'biz', 'factory', 'ent'] as const).map((tabKey) => {
+                  const t = planTiersData[tabKey];
+                  const isSelected = mobileCompareTab === tabKey;
+                  return (
+                    <button
+                      key={tabKey}
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setMobileCompareTab(tabKey);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all border ${
+                        isSelected
+                          ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-sm'
+                          : 'bg-[#F7EAE0]/60 text-[#5E3122] border-[#F9D2BA] hover:bg-[#F7EAE0]'
+                      }`}
+                    >
+                      <span>{t.name.split(' ')[0]}</span>
+                      <span className="ml-1 text-[10px] opacity-80">({t.price})</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Full Details Active Card for Selected Plan */}
+              {(() => {
+                const activePlan = planTiersData[mobileCompareTab];
+                return (
+                  <div className="p-4 rounded-2xl border-2 border-[#1D4533] bg-[#F7EAE0]/40 space-y-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2 border-b border-[#F9D2BA] pb-3">
+                      <div>
+                        <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider mb-1 ${activePlan.badgeBg}`}>
+                          {activePlan.badge}
+                        </span>
+                        <h4 className="text-xl font-black text-[#1D4533] uppercase">{activePlan.name}</h4>
+                        <p className="text-[11px] text-[#5E3122] font-semibold mt-0.5 leading-snug">{activePlan.desc}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-2xl font-black text-[#1D4533]">{activePlan.price}</div>
+                        <span className="text-[10px] text-[#5E3122] font-semibold block">{activePlan.cycle}</span>
+                      </div>
+                    </div>
+
+                    {/* 1-Tap UPI Upgrade Button for this active plan */}
+                    <button
+                      type="button"
+                      disabled={isProcessingUpgrade}
+                      onClick={() => handleUpgradeToPlan(activePlan.id, activePlan.name, activePlan.amountINR)}
+                      className="w-full py-3 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-black text-xs transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-[#F9D2BA]" />
+                      <span>{activePlan.amountINR === 0 ? 'Current Active Tier' : `Pay ${activePlan.price} via UPI / Razorpay`}</span>
+                    </button>
+
+                    {/* All 9 Full Details Feature Rows */}
+                    <div className="space-y-2 pt-1">
+                      <span className="text-[10px] font-black uppercase text-[#5E3122] tracking-wider block">
+                        Full Feature &amp; Limit Breakdown:
+                      </span>
+                      <div className="space-y-1.5 divide-y divide-[#F9D2BA]/60">
+                        {activePlan.features.map((f) => (
+                          <div key={f.label} className="flex items-center justify-between pt-1.5 text-xs">
+                            <span className="font-bold text-[#5E3122] text-[11px]">{f.label}</span>
+                            <span className="font-extrabold text-[#1D4533] text-[11px] text-right ml-2">{f.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* ─── DESKTOP VIEW: COMPARISON TABLE (HIDDEN MD:BLOCK) ─── */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b-2 border-[#1D4533] text-[#1D4533]">
@@ -461,26 +701,26 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
             </div>
 
             {/* Modal Actions */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#F9D2BA]">
-              <span className="text-xs text-[#5E3122] font-semibold">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 sm:pt-4 border-t border-[#F9D2BA]">
+              <span className="text-xs text-[#5E3122] font-semibold text-center sm:text-left">
                 Need high-volume QR stamping for over 100,000 units?
               </span>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setIsCompareModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-[#F9D2BA] text-xs font-bold text-[#5E3122] hover:bg-[#F7EAE0]"
+                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-[#F9D2BA] text-xs font-bold text-[#5E3122] hover:bg-[#F7EAE0] text-center"
                 >
                   Close
                 </button>
                 <button
                   type="button"
                   disabled={isProcessingUpgrade}
-                  onClick={handleUpgradeToEnterprise}
-                  className="px-5 py-2.5 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2"
+                  onClick={() => handleUpgradeToPlan('enterprise', 'Enterprise Custom', 9999)}
+                  className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-1.5"
                 >
-                  <Sparkles className="w-4 h-4 text-[#F9D2BA]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#F9D2BA]" />
                   <span>{isProcessingUpgrade ? 'Connecting Gateway...' : 'Upgrade to Enterprise'}</span>
                 </button>
               </div>

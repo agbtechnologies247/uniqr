@@ -157,6 +157,7 @@ export function App() {
   const [isContactSalesModalOpen, setIsContactSalesModalOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState<boolean>(false);
   const [isCapabilityGuideOpen, setIsCapabilityGuideOpen] = useState<boolean>(false);
 
@@ -267,7 +268,13 @@ export function App() {
         onOpenContactSales={() => setIsContactSalesModalOpen(true)}
         quotaUsed={quotaUsed}
         quotaLimit={quotaLimit}
-        onToggleSidebar={() => setIsSidebarCollapsed(prev => !prev)}
+        onToggleSidebar={() => {
+          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setIsMobileDrawerOpen(prev => !prev);
+          } else {
+            setIsSidebarCollapsed(prev => !prev);
+          }
+        }}
       />
 
       {/* Interactive Platform Capability Guide */}
@@ -325,13 +332,15 @@ export function App() {
       ) : (
         <div className="flex-1 max-w-7xl w-full mx-auto flex">
           
-          {/* Desktop Sidebar */}
+          {/* Desktop & Mobile Slide-Over Sidebar */}
           <Sidebar
             currentTab={currentTab}
             setCurrentTab={setCurrentTab}
             onOpenUpgrade={() => setIsUpgradeModalOpen(true)}
             isCollapsed={isSidebarCollapsed}
             setIsCollapsed={setIsSidebarCollapsed}
+            isMobileOpen={isMobileDrawerOpen}
+            setIsMobileOpen={setIsMobileDrawerOpen}
           />
 
           {/* App Screen Contents */}
@@ -469,7 +478,11 @@ export function App() {
 
       {/* Mobile Bottom Floating Navigation — Application screens only */}
       {!['landing', 'use-cases', 'features', 'pricing', 'api-docs', 'contact'].includes(currentTab) && !currentTab.startsWith('passport-') && (
-        <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} />
+        <BottomNav 
+          currentTab={currentTab} 
+          setCurrentTab={setCurrentTab} 
+          onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
+        />
       )}
 
       {/* Modals & Command Palette */}

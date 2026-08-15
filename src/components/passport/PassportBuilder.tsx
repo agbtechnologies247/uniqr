@@ -475,33 +475,33 @@ export const PassportBuilder: React.FC<PassportBuilderProps> = ({ products = [],
   return (
     <div className="space-y-6 pb-20 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
       
-      {/* ─── HEADER BAR (User-Requested Text & Icon Reset) ─── */}
-      <div className="bg-[#1D4533] p-6 rounded-3xl border border-[#F9D2BA]/30 text-[#F7EAE0] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
+      {/* ─── HEADER BAR (COMPACT ON MOBILE) ─── */}
+      <div className="bg-[#1D4533] p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-[#F9D2BA]/30 text-[#F7EAE0] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 shadow-md">
         <div>
-          <div className="flex items-center gap-2 text-[#F9D2BA] font-extrabold text-xs uppercase tracking-wider mb-1">
-            <Palette className="w-4 h-4" />
+          <div className="flex items-center gap-1.5 text-[#F9D2BA] font-extrabold text-[10px] sm:text-xs uppercase tracking-wider mb-0.5 sm:mb-1">
+            <Palette className="w-3.5 h-3.5" />
             <span>Digital Passport Studio</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#F7EAE0] tracking-tight">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-[#F7EAE0] tracking-tight">
             Passport Layout &amp; Theme Customizer
           </h1>
-          <p className="text-xs sm:text-sm text-[#F9D2BA]/90 mt-0.5 font-medium">
+          <p className="text-[11px] sm:text-xs text-[#F9D2BA]/90 mt-0.5 font-medium line-clamp-1 sm:line-clamp-none">
             Customize color palettes, brand fonts, section order, alignment, and footer branding for your public passport page.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0 w-full sm:w-auto justify-between sm:justify-end pt-1 sm:pt-0 border-t sm:border-t-0 border-[#F9D2BA]/20">
           {/* View Switcher Button */}
-          <div className="bg-[#5E3122] p-1 rounded-2xl border border-[#F9D2BA]/30 flex items-center gap-1">
+          <div className="bg-[#5E3122] p-1 rounded-xl sm:rounded-2xl border border-[#F9D2BA]/30 flex items-center gap-1">
             <button
               type="button"
               onClick={() => {
                 sound.playClick();
                 setActiveView('gallery');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeView === 'gallery'
-                  ? 'bg-[#F9D2BA] text-[#1D4533] shadow-xs'
+                  ? 'bg-[#F9D2BA] text-[#1D4533] shadow-xs font-black'
                   : 'text-[#F7EAE0] hover:bg-[#1D4533]'
               }`}
             >
@@ -515,9 +515,9 @@ export const PassportBuilder: React.FC<PassportBuilderProps> = ({ products = [],
                 sound.playClick();
                 setActiveView('customizer');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeView === 'customizer'
-                  ? 'bg-[#F9D2BA] text-[#1D4533] shadow-xs'
+                  ? 'bg-[#F9D2BA] text-[#1D4533] shadow-xs font-black'
                   : 'text-[#F7EAE0] hover:bg-[#1D4533]'
               }`}
             >
@@ -526,29 +526,40 @@ export const PassportBuilder: React.FC<PassportBuilderProps> = ({ products = [],
             </button>
           </div>
 
-          {/* Reset Default Icon Button */}
-          <button
-            type="button"
-            onClick={handleReset}
-            className="p-2.5 rounded-xl bg-[#5E3122] hover:bg-[#F9D2BA] hover:text-[#1D4533] text-[#F7EAE0] transition-all flex items-center justify-center shadow-sm"
-            title="Reset Default"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {/* Reset Default Icon Button */}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="p-2 sm:p-2.5 rounded-xl bg-[#5E3122] hover:bg-[#F9D2BA] hover:text-[#1D4533] text-[#F7EAE0] transition-all flex items-center justify-center shadow-xs"
+              title="Reset Default"
+            >
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
 
-          {/* Save Passport Button */}
-          <button
-            type="button"
-            onClick={handleSave}
-            className={`px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 shadow-md ${
-              saved 
-                ? 'bg-emerald-500 text-white' 
-                : 'bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533]'
-            }`}
-          >
-            {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            <span>{saved ? 'Saved!' : 'Save Passport'}</span>
-          </button>
+            {/* Save Passport Button */}
+            <button
+              type="button"
+              onClick={handleSave}
+              className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shadow-md ${
+                saved
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533]'
+              }`}
+            >
+              {saved ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-white" />
+                  <span>Saved!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5 text-[#1D4533]" />
+                  <span>Save Passport</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

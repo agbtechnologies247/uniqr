@@ -16,6 +16,10 @@ import {
   BadgeCheck,
   Image as ImageIcon,
   Link as LinkIcon,
+  FileDown,
+  Phone,
+  Mail,
+  Globe
 } from 'lucide-react';
 import { Product, TamperEvidentTrailEvent, PassportConfig } from '../../types';
 import { TrailLedger } from '../../services/trailLedger';
@@ -307,7 +311,13 @@ export const DynamicPassport: React.FC<DynamicPassportProps> = ({
   };
 
   const renderImages = () => {
-    if (!product.imageUrl) return null;
+    const allImages = [
+      ...(product.galleryImages || []),
+      ...(product.imageUrl && !(product.galleryImages?.some(g => g.dataUrl === product.imageUrl))
+        ? [{ id: 'primary', name: 'Primary Photo', size: 0, dataUrl: product.imageUrl, uploadedAt: '' }]
+        : [])
+    ];
+    if (allImages.length === 0) return null;
     return (
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <h3 style={{
@@ -316,23 +326,33 @@ export const DynamicPassport: React.FC<DynamicPassportProps> = ({
           display: 'flex', alignItems: 'center', gap: '8px', margin: 0,
         }}>
           <ImageIcon style={{ width: 16, height: 16, color: body.primaryTextColor }} />
-          Product Images
+          Verified Images ({allImages.length})
         </h3>
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          style={{ maxWidth: '100%', borderRadius: `${body.cardBorderRadius}px`, border: `1px solid ${body.cardBorderColor}` }}
-        />
+        <div style={{ display: 'grid', gridTemplateColumns: allImages.length === 1 ? '1fr' : 'repeat(2, 1fr)', gap: '10px' }}>
+          {allImages.map((img) => (
+            <div key={img.id} style={{ borderRadius: `${body.cardBorderRadius}px`, overflow: 'hidden', border: `1px solid ${body.cardBorderColor}`, maxHeight: 220 }}>
+              <img
+                src={img.dataUrl}
+                alt={img.name || product.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
 
   const renderUrls = () => {
-    // Extract URL-like custom fields
+    // Official PDF Document
+    const hasPdf = Boolean(product.pdfDocument);
+    // Contact channels & URL fields
     const urlFields = Object.entries(product.customFields || {}).filter(
       ([, val]) => typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'))
     );
-    if (urlFields.length === 0) return null;
+    const hasContact = Boolean(product.websiteUrl || product.contactEmail || product.contactPhone || urlFields.length > 0 || hasPdf);
+    if (!hasContact) return null;
+
     return (
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <h3 style={{
@@ -340,10 +360,91 @@ export const DynamicPassport: React.FC<DynamicPassportProps> = ({
           textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: body.headingFont,
           display: 'flex', alignItems: 'center', gap: '8px', margin: 0,
         }}>
-          <LinkIcon style={{ width: 16, height: 16, color: body.primaryTextColor }} />
-          External Links
+          <Globe style={{ width: 16, height: 16, color: body.primaryTextColor }} />
+          Verified Documents &amp; External Channels
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+        {/* PDF Document Download */}
+        {product.pdfDocument && (
+          <div style={{
+            ...fieldCardStyle,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FileText style={{ width: 20, height: 20, color: body.accentColor }} />
+              <div>
+                <strong style={{ fontSize: `${body.fieldValueSize}px`, color: body.primaryTextColor, fontFamily: body.fieldValueFont }}>
+                  {product.pdfDocument.name}
+                </strong>
+                <span style={{ display: 'block', fontSize: `${body.fieldLabelSize}px`, color: body.secondaryTextColor }}>
+                  {(product.pdfDocument.size / (1024 * 1024)).toFixed(2)} MB • Official PDF
+                </span>
+              </div>
+            </div>
+            <a
+              href={product.pdfDocument.dataUrl}
+              download={product.pdfDocument.name}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '10px',
+                backgroundColor: body.accentColor, color: '#fff',
+                fontSize: `${body.bodySize}px`, fontWeight: 700, textDecoration: 'none'
+              }}
+            >
+              <FileDown style={{ width: 14, height: 14 }} /> Download
+            </a>
+          </div>
+        )}
+
+        {/* Action buttons for website, email, phone */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+          {product.websiteUrl && (
+            <a
+              href={product.websiteUrl.startsWith('http') ? product.websiteUrl : `https://${product.websiteUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                ...fieldCardStyle,
+                display: 'flex', alignItems: 'center', gap: '8px',
+                color: body.accentColor, fontFamily: body.bodyFont, fontSize: `${body.bodySize}px`,
+                fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              <Globe style={{ width: 14, height: 14 }} />
+              Official Portal
+            </a>
+          )}
+
+          {product.contactEmail && (
+            <a
+              href={`mailto:${product.contactEmail}`}
+              style={{
+                ...fieldCardStyle,
+                display: 'flex', alignItems: 'center', gap: '8px',
+                color: body.accentColor, fontFamily: body.bodyFont, fontSize: `${body.bodySize}px`,
+                fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              <Mail style={{ width: 14, height: 14 }} />
+              {product.contactEmail}
+            </a>
+          )}
+
+          {product.contactPhone && (
+            <a
+              href={`tel:${product.contactPhone}`}
+              style={{
+                ...fieldCardStyle,
+                display: 'flex', alignItems: 'center', gap: '8px',
+                color: body.accentColor, fontFamily: body.bodyFont, fontSize: `${body.bodySize}px`,
+                fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              <Phone style={{ width: 14, height: 14 }} />
+              {product.contactPhone}
+            </a>
+          )}
+
           {urlFields.map(([key, val]) => (
             <a
               key={key}
@@ -351,13 +452,14 @@ export const DynamicPassport: React.FC<DynamicPassportProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               style={{
+                ...fieldCardStyle,
                 display: 'flex', alignItems: 'center', gap: '8px',
                 color: body.accentColor, fontFamily: body.bodyFont, fontSize: `${body.bodySize}px`,
                 fontWeight: 600, textDecoration: 'none',
               }}
             >
               <ExternalLink style={{ width: 14, height: 14 }} />
-              {key}: {val}
+              {key}
             </a>
           ))}
         </div>

@@ -158,18 +158,18 @@ export const ReportsPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-20 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
       
-      {/* ─── 1. REPORTS HEADER & PRIMARY CREATE REPORT ACTION ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F9D2BA] pb-4">
+      {/* ─── 1. REPORTS HEADER & PRIMARY CREATE REPORT ACTION (COMPACT ON MOBILE) ─── */}
+      <div className="bg-white p-3.5 sm:p-6 sm:p-8 rounded-xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-[#F9D2BA] pb-3 sm:pb-4">
           <div>
-            <div className="flex items-center gap-2 text-[#1D4533] font-extrabold text-xs uppercase tracking-wider mb-1">
-              <FileText className="w-4 h-4 text-[#F9D2BA]" />
-              <span>Document Library &amp; Reporting Engine</span>
+            <div className="flex items-center gap-1.5 text-[#1D4533] font-extrabold text-[10px] sm:text-xs uppercase tracking-wider mb-0.5 sm:mb-1">
+              <FileText className="w-3.5 h-3.5 text-[#F9D2BA]" />
+              <span>Reporting Engine</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
+            <h1 className="text-lg sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
               Reports
             </h1>
-            <p className="text-xs sm:text-sm text-[#5E3122] mt-0.5 font-medium">
+            <p className="text-[11px] sm:text-sm text-[#5E3122] mt-0.5 font-medium hidden sm:block">
               Generate, manage and export business reports for audits, analytics, and executive compliance
             </p>
           </div>
@@ -181,10 +181,10 @@ export const ReportsPage: React.FC = () => {
               sound.playClick();
               setIsCreateModalOpen(true);
             }}
-            className="px-5 py-3 rounded-2xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2 shrink-0 self-start sm:self-auto"
+            className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
           >
-            <Plus className="w-4 h-4 text-[#F9D2BA]" />
-            <span>+ Create Report</span>
+            <Plus className="w-3.5 h-3.5 text-[#F9D2BA]" />
+            <span>Create Report</span>
           </button>
         </div>
 

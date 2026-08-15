@@ -3,7 +3,7 @@ import {
   ArrowLeft, Save, Sparkles, Download, Share2, Copy, Check, QrCode, 
   Layers, Plus, ShieldCheck, History, RefreshCw, Zap, CheckCircle2, Lock,
   Truck, Cpu, Dumbbell, Smartphone, Thermometer, FileSpreadsheet, X, ChevronRight, ChevronLeft, Trash2, ChevronDown, Eye, Sliders, Settings,
-  Building, HardHat, Sprout, Gem, Key, ShoppingBag, Pill, Wrench, FileText, ClipboardList, Award, Users, Boxes, MapPin, Receipt, Workflow, BookOpen, AlertTriangle, Link as LinkIcon, Edit3, Wand2
+  Building, HardHat, Sprout, Gem, Key, ShoppingBag, Pill, Wrench, FileText, ClipboardList, Award, Users, Boxes, MapPin, Receipt, Workflow, BookOpen, AlertTriangle, Link as LinkIcon, Edit3, Wand2, Network
 } from 'lucide-react';
 import { Product, BuilderSection, EntityType, QrPurpose, EntityRelationship } from '../../types';
 import { SectionFieldBuilder } from './SectionFieldBuilder';
@@ -707,10 +707,157 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
     }
   }, [productToEdit]);
 
+  // ─── MEDIA & CONTACT EXTENDED SUPPORT (PDF <= 10MB, Images <= 5MB max 2, URL, Phone, Email, Long Text) ───
+  const [pdfDocument, setPdfDocument] = useState<{
+    name: string;
+    size: number;
+    dataUrl: string;
+    uploadedAt: string;
+  } | null>(productToEdit?.pdfDocument || null);
+
+  const [galleryImages, setGalleryImages] = useState<{
+    id: string;
+    name: string;
+    size: number;
+    dataUrl: string;
+    uploadedAt: string;
+  }[]>(productToEdit?.galleryImages || (productToEdit?.imageUrl ? [{
+    id: 'img-legacy',
+    name: 'Primary Image',
+    size: 1024 * 350,
+    dataUrl: productToEdit.imageUrl,
+    uploadedAt: new Date().toISOString()
+  }] : []));
+
+  // Customizable dynamic contact channels & online resources
+  const [contactChannels, setContactChannels] = useState<{
+    id: string;
+    label: string;
+    value: string;
+    type: 'url' | 'email' | 'phone' | 'text';
+    placeholder?: string;
+  }[]>(() => [
+    { id: 'c-web', label: 'Website / Portal URL', value: productToEdit?.websiteUrl || '', type: 'url', placeholder: 'https://company.com/entity' },
+    { id: 'c-email', label: 'Support & Care Email', value: productToEdit?.contactEmail || '', type: 'email', placeholder: 'support@company.com' },
+    { id: 'c-phone', label: 'Helpdesk / Direct Line', value: productToEdit?.contactPhone || '', type: 'phone', placeholder: '+91 98765 43210' }
+  ]);
+  const [descriptionLabel, setDescriptionLabel] = useState<string>('Description Summary');
+  const [longDescription, setLongDescription] = useState<string>(productToEdit?.longDescription || productToEdit?.description || '');
+
+  // Mobile focused step (1 to 7)
+  const [mobileStep, setMobileStep] = useState<number>(1);
+
   // Available system entities for relationship linking
   const [existingEntities, setExistingEntities] = useState<Product[]>([]);
   const [newRelTargetId, setNewRelTargetId] = useState<string>('');
   const [newRelType, setNewRelType] = useState<EntityRelationship['relationType']>(initialMapping.suggestedRelationVerb);
+
+  // Validation handlers
+  const isValidEmail = (email: string) => !email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isValidPhone = (phone: string) => !phone.trim() || /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(phone.trim().replace(/\s+/g, ''));
+  const isValidUrl = (url: string) => {
+    if (!url.trim()) return true;
+    try {
+      const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+      return parsed.hostname.includes('.');
+    } catch {
+      return false;
+    }
+  };
+
+  const handleAddContactChannel = () => {
+    sound.playClick();
+    const newChan = {
+      id: `c-${Date.now()}`,
+      label: 'Custom Channel / Link',
+      value: '',
+      type: 'text' as const,
+      placeholder: 'Enter contact details or URL...'
+    };
+    setContactChannels(prev => [...prev, newChan]);
+  };
+
+  const handleRemoveContactChannel = (id: string) => {
+    sound.playClick();
+    setContactChannels(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleContactLabelChange = (id: string, newLabel: string) => {
+    setContactChannels(prev => prev.map(c => c.id === id ? { ...c, label: newLabel } : c));
+  };
+
+  const handleContactValueChange = (id: string, val: string) => {
+    setContactChannels(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      let inferredType = c.type;
+      if (c.type === 'text') {
+        if (val.startsWith('http://') || val.startsWith('https://')) inferredType = 'url';
+        else if (val.includes('@') && val.includes('.')) inferredType = 'email';
+        else if (/^[+0-9\s-]{7,}$/.test(val)) inferredType = 'phone';
+      }
+      return { ...c, value: val, type: inferredType };
+    }));
+  };
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Invalid format. Please select a PDF file only.');
+      return;
+    }
+    const maxBytes = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxBytes) {
+      alert(`File size exceeds 10MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please select a file under 10MB.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPdfDocument({
+        name: file.name,
+        size: file.size,
+        dataUrl: reader.result as string,
+        uploadedAt: new Date().toISOString()
+      });
+      sound.playSuccessChime();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (galleryImages.length + files.length > 2) {
+      alert('Maximum 2 images allowed per entity passport.');
+      return;
+    }
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        alert(`"${file.name}" is not an image file.`);
+        return;
+      }
+      const maxBytes = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxBytes) {
+        alert(`"${file.name}" exceeds 5MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB).`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setGalleryImages(prev => [
+          ...prev.slice(0, 1),
+          {
+            id: `img-${Date.now()}-${Math.random()}`,
+            name: file.name,
+            size: file.size,
+            dataUrl: reader.result as string,
+            uploadedAt: new Date().toISOString()
+          }
+        ]);
+        sound.playSuccessChime();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // USER CUSTOM TEMPLATES STATE (Elevated to top of Entity Creation)
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>(() => {
@@ -812,6 +959,24 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
       builderSections: mapping.defaultBuilderSections,
       domainData: getDefaultDomainData(selectedEntityType)
     }));
+  };
+
+  // One-tap Mobile Quick Preset: Custom Digital Entity + Identity & Access Verification -> Step 2
+  const handleMobileAutoFillCustom = () => {
+    sound.playSuccessChime();
+    const customType: EntityType = 'custom';
+    setSelectedEntityType(customType);
+    setSelectedPurpose('access');
+    const mapping = ENTITY_CONTEXT_MAP.custom || ENTITY_CONTEXT_MAP.product;
+    setCoreFields(buildInitialCoreFields(mapping));
+    setFormData(prev => ({
+      ...prev,
+      description: mapping.defaultDescription,
+      tags: mapping.defaultTags,
+      builderSections: mapping.defaultBuilderSections,
+      domainData: getDefaultDomainData(customType)
+    }));
+    setMobileStep(2);
   };
 
   // ─── CORE IDENTITY FIELD HANDLERS (EDIT LABEL, EDIT VALUE, REMOVE, ADD) ───
@@ -954,7 +1119,14 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
       updatedAt: new Date().toISOString(),
       tags: formData.tags,
       location: locationField?.value || currentMapping.defaultLocation,
-      organization: authorityField?.value || currentMapping.defaultAuthority
+      organization: authorityField?.value || currentMapping.defaultAuthority,
+      pdfDocument: pdfDocument || undefined,
+      galleryImages: galleryImages.length > 0 ? galleryImages : undefined,
+      imageUrl: galleryImages[0]?.dataUrl || productToEdit?.imageUrl || undefined,
+      websiteUrl: (contactChannels.find(c => c.type === 'url' || c.id === 'c-web' || c.label.toLowerCase().includes('web') || c.label.toLowerCase().includes('url'))?.value || '').trim() || undefined,
+      contactPhone: (contactChannels.find(c => c.type === 'phone' || c.id === 'c-phone' || c.label.toLowerCase().includes('phone') || c.label.toLowerCase().includes('line'))?.value || '').trim() || undefined,
+      contactEmail: (contactChannels.find(c => c.type === 'email' || c.id === 'c-email' || c.label.toLowerCase().includes('email') || c.label.toLowerCase().includes('mail'))?.value || '').trim() || undefined,
+      longDescription: longDescription.trim() || formData.description || undefined
     };
 
     onSave(entityToSave);
@@ -979,653 +1151,1483 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
   // Column 1 and Column 2 Core Fields
   const col1Fields = coreFields.filter(f => f.column === 1);
   const col2Fields = coreFields.filter(f => f.column === 2);
+  const mobileStepTitles = [
+    'Classification & Purpose',
+    'Core Identity Fields',
+    'Contact Channels & Links',
+    'Media & PDF Attachments',
+    'Dynamic Specifications',
+    'Connected Intelligence & Graph',
+    'Review & Final Stamp'
+  ];
 
   return (
     <div className="space-y-6 pb-20 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
       
-      {/* ─── 1. TOP HEADER & QUICK ACTIONS ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-[#1D4533] font-extrabold text-xs uppercase tracking-wider mb-1">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="hover:underline flex items-center gap-1 text-[#5E3122]"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Inventory</span>
-            </button>
-            <span>/</span>
-            <span>Universal Entity Creator</span>
+      {/* ══════════════════════════════════════════════════════════════════
+          MOBILE VIEW: 7-STEP PROGRESSIVE WORKSPACE (md:hidden)
+      ══════════════════════════════════════════════════════════════════ */}
+      <div className="md:hidden space-y-3">
+        
+        {/* Mobile Header Card */}
+        <div className="bg-white p-3.5 rounded-2xl border border-[#F9D2BA] shadow-sm flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-base font-black text-[#1D4533] leading-tight">
+              {productToEdit ? 'Edit Entity' : 'Register Universal Entity'}
+            </h1>
+            <p className="text-[10px] text-[#5E3122] font-medium mt-0.5">
+              Step {mobileStep} of 7: {mobileStepTitles[mobileStep - 1]}
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
-            {productToEdit ? 'Edit Universal Entity Record' : 'Register New Universal Entity'}
-          </h1>
-          <p className="text-xs sm:text-sm text-[#5E3122] mt-0.5 font-medium">
-            Dynamic &amp; editable schema. All fields and section titles can be renamed with the pen icon, customized, or deleted. Nothing is fixed.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleLoadSmartPreset}
-            className="px-3.5 py-2.5 rounded-xl bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-extrabold text-xs transition-all border border-[#F9D2BA] flex items-center gap-1.5 shadow-xs"
-            title="Auto-fill recommended industry defaults for this entity classification"
-          >
-            <Wand2 className="w-4 h-4 text-[#5E3122]" />
-            <span>✨ Auto-Fill Realistic Defaults</span>
-          </button>
 
           <button
             type="button"
-            onClick={() => handleSubmit()}
-            className="px-6 py-2.5 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2"
+            onClick={handleMobileAutoFillCustom}
+            className="w-9 h-9 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F9D2BA] flex items-center justify-center shadow-sm border border-[#F9D2BA] shrink-0 transition-transform active:scale-95"
+            title="Auto-Fill Custom Digital Entity & Jump to Identity"
           >
-            <Save className="w-4 h-4 text-[#F9D2BA]" />
-            <span>{productToEdit ? 'Save Changes' : 'Register & Save'}</span>
+            <Wand2 className="w-4 h-4" />
           </button>
         </div>
-      </div>
 
-      {/* ─── 2. 4-STEP PROGRESS STEPPER ─── */}
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#F9D2BA] shadow-sm">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {wizardSteps.map((step) => {
-            const isActive = currentStep === step.num;
-            const isCompleted = currentStep > step.num;
-            return (
+        {/* Mobile Step Progress Indicator */}
+        <div className="bg-white p-2.5 rounded-2xl border border-[#F9D2BA] shadow-xs space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] font-black text-[#1D4533]">
+            <span>{mobileStepTitles[mobileStep - 1]}</span>
+            <span className="text-[10px] text-[#5E3122] font-bold">{Math.round((mobileStep / 7) * 100)}%</span>
+          </div>
+
+          <div className="w-full h-1.5 bg-[#F7EAE0] rounded-full overflow-hidden flex gap-0.5">
+            {[1, 2, 3, 4, 5, 6, 7].map((s) => (
+              <div
+                key={s}
+                className={`h-full flex-1 rounded-full transition-all ${
+                  s <= mobileStep ? 'bg-[#1D4533]' : 'bg-[#F9D2BA]/40'
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+            {['1. Class', '2. Identity', '3. Contact', '4. Media', '5. Specs', '6. Graph', '7. Stamp'].map((name, idx) => (
               <button
-                key={step.num}
+                key={name}
                 type="button"
-                onClick={() => {
-                  sound.playClick();
-                  setCurrentStep(step.num);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all flex items-center gap-3 ${
-                  isActive
-                    ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-md ring-2 ring-[#F9D2BA]'
-                    : isCompleted
-                    ? 'bg-[#F7EAE0]/70 text-[#1D4533] border-[#F9D2BA]'
-                    : 'bg-white text-[#5E3122] border-[#F9D2BA]/60 hover:bg-[#F7EAE0]/30'
+                onClick={() => { sound.playClick(); setMobileStep(idx + 1); }}
+                className={`px-2 py-0.5 rounded-lg text-[9px] font-extrabold whitespace-nowrap transition-all shrink-0 ${
+                  mobileStep === idx + 1
+                    ? 'bg-[#1D4533] text-[#F7EAE0]'
+                    : 'bg-[#F7EAE0]/60 text-[#5E3122]'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0 ${
-                  isActive
-                    ? 'bg-[#F9D2BA] text-[#1D4533]'
-                    : isCompleted
-                    ? 'bg-[#1D4533] text-[#F7EAE0]'
-                    : 'bg-[#F7EAE0] text-[#5E3122]'
-                }`}>
-                  {isCompleted ? <Check className="w-4 h-4" /> : step.num}
-                </div>
-                <div className="min-w-0">
-                  <span className="text-xs font-black block truncate leading-tight">{step.title}</span>
-                  <span className={`text-[10px] font-medium block truncate ${isActive ? 'text-[#F9D2BA]' : 'text-[#5E3122]'}`}>
-                    {step.desc}
-                  </span>
-                </div>
+                {name}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* ─── 3. STEP CONTENT WORKSPACE ─── */}
-      <div className="space-y-6">
-
-        {/* ══════════════════════════════════════════════════════════════════
-            STEP 1: CLASSIFICATION & PURPOSE (THE "WHAT & WHY")
-        ══════════════════════════════════════════════════════════════════ */}
-        {currentStep === 1 && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-6">
-              
-              {/* ⭐ MY CUSTOM SCHEMA TEMPLATES (ELEVATED TO TOP) */}
-              <div className="p-4 rounded-2xl bg-[#F7EAE0]/70 border border-[#F9D2BA] space-y-3 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F9D2BA] pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center font-bold">
-                      <Sparkles className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-black uppercase tracking-wider text-[#1D4533]">
-                        ⭐ My Custom Schema Templates
-                      </h3>
-                      <span className="text-[10px] text-[#5E3122] font-semibold">
-                        Your custom workflows appear on top for 1-click re-use
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveCurrentAsTemplate}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-xs shrink-0 self-start sm:self-auto"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-[#F9D2BA]" />
-                    <span>Save Current as Template</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {customTemplates.map((tpl) => (
-                    <div
-                      key={tpl.id}
-                      onClick={() => handleApplyTemplate(tpl)}
-                      className="p-3 bg-white rounded-xl border border-[#F9D2BA] hover:border-[#1D4533] hover:shadow-sm cursor-pointer transition-all flex flex-col justify-between space-y-2 group"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#F7EAE0] text-[#1D4533]">
-                            {tpl.category}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteTemplate(tpl.id, e)}
-                            className="text-slate-400 hover:text-red-600 p-0.5 rounded transition-colors"
-                            title="Delete template"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <h4 className="text-xs font-black text-[#1D4533] group-hover:text-[#5E3122] transition-colors leading-snug">
-                          {tpl.name}
-                        </h4>
-                        <span className="text-[10px] font-mono text-[#5E3122] block">
-                          {tpl.coreFields?.length || 6} Fields • {tpl.builderSections?.length || 1} Custom Sections
-                        </span>
-                      </div>
-
-                      <div className="pt-2 border-t border-[#F9D2BA]/40 flex items-center justify-between text-[10px] font-black text-[#1D4533]">
-                        <span>Click to Apply</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-[#5E3122] group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        {/* Mobile Step Content Cards */}
+        <div className="bg-white p-4 rounded-2xl border border-[#F9D2BA] shadow-sm space-y-3">
+          
+          {/* MOBILE STEP 1: CLASSIFICATION & QR PURPOSE DROPDOWNS */}
+          {mobileStep === 1 && (
+            <div className="space-y-3">
+              {/* 1. Entity Classification Dropdown */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-[#1D4533] flex items-center justify-between">
+                  <span>Entity Classification</span>
+                  <span className="text-[9px] text-[#5E3122] font-bold">Auto-Adapts Fields</span>
+                </label>
+                <select
+                  value={selectedEntityType}
+                  onChange={(e) => handleEntityTypeChange(e.target.value as EntityType)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#F7EAE0] border border-[#F9D2BA] text-[#1D4533] font-black text-xs focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
+                >
+                  <optgroup label="📦 Physical Goods">
+                    <option value="product">Product / Manufactured Item</option>
+                  </optgroup>
+                  <optgroup label="⚙️ Operations & Industrial Assets">
+                    <option value="machine">Industrial Machine Unit</option>
+                    <option value="equipment">Equipment &amp; Tooling</option>
+                    <option value="asset">Fixed &amp; Enterprise Asset</option>
+                  </optgroup>
+                  <optgroup label="🚚 Supply Chain & Facilities">
+                    <option value="location">Warehouse Facility / Storage Hub</option>
+                    <option value="batch">Manufacturing Batch / Stock Lot</option>
+                    <option value="shipment">Logistics Shipment / Consignment</option>
+                    <option value="event">Event / Expo / Conference Pass</option>
+                  </optgroup>
+                  <optgroup label="👥 People & Organizations">
+                    <option value="customer">Customer / Enterprise Client</option>
+                    <option value="employee">Employee / Field Technician</option>
+                  </optgroup>
+                  <optgroup label="📜 Documents, Care & Compliance">
+                    <option value="document">Digital Document / SOP</option>
+                    <option value="certificate">Compliance Certificate / Test Report</option>
+                    <option value="warranty">Warranty &amp; Service Care Plan</option>
+                    <option value="invoice">Tax Invoice / Commercial Bill</option>
+                  </optgroup>
+                  <optgroup label="⚡ Operations, Workflows & Custom">
+                    <option value="process">Business Process &amp; Workflow</option>
+                    <option value="process_step">Process Step / Quality Gate</option>
+                    <option value="work_order">Work Order / Service Ticket</option>
+                    <option value="service">Service Offering / AMC</option>
+                    <option value="custom">Custom Dynamic Entity</option>
+                  </optgroup>
+                </select>
               </div>
 
-              {/* Category Filter Pills */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F9D2BA] pb-4">
+              {/* 2. Select Operational QR Purpose Dropdown */}
+              <div className="space-y-1 pt-1">
+                <label className="text-[10px] font-black uppercase text-[#1D4533] flex items-center justify-between">
+                  <span>Operational QR Purpose</span>
+                  <span className="text-[9px] text-[#5E3122] font-bold">Action Intent</span>
+                </label>
+                <select
+                  value={selectedPurpose}
+                  onChange={(e) => {
+                    sound.playClick();
+                    setSelectedPurpose(e.target.value as QrPurpose);
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#F7EAE0] border border-[#F9D2BA] text-[#1D4533] font-black text-xs focus:outline-none focus:ring-2 focus:ring-[#1D4533]"
+                >
+                  <option value="identification">Digital Product Identity &amp; Profile</option>
+                  <option value="access">Identity &amp; Access Verification</option>
+                  <option value="authentication">Anti-Counterfeit &amp; Serial Verification</option>
+                  <option value="traceability">Supply Chain &amp; Batch Traceability</option>
+                  <option value="maintenance">Operations, Telemetry &amp; Maintenance</option>
+                  <option value="documentation">Digital Document &amp; SOP Hub</option>
+                  <option value="inventory">Asset Tracking &amp; Warehouse Audit</option>
+                  <option value="payment">Universal Digital Payment Gateway</option>
+                  <option value="verification">Tamper-Evident Certification</option>
+                  <option value="custom">Custom Configured Workflow</option>
+                </select>
+              </div>
+
+              {/* Rationale Pill */}
+              <div className="p-2.5 rounded-xl bg-[#F7EAE0]/50 border border-[#F9D2BA] text-[11px] text-[#5E3122]">
+                <strong className="text-[#1D4533] font-bold">{selectedEntityType.toUpperCase()}</strong>: {currentMapping.purposeRationale}
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE STEP 2: 3 CORE IDENTITY DETAILS */}
+          {mobileStep === 2 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-[#F9D2BA] pb-2">
                 <div>
-                  <h2 className="text-xl font-extrabold text-[#1D4533] flex items-center gap-2">
-                    <span>1. Entity Classification</span>
-                  </h2>
-                  <p className="text-xs text-[#5E3122] font-medium mt-0.5">
-                    Select the physical or digital schema. All subsequent labels and metadata will automatically adapt.
-                  </p>
+                  <h3 className="text-xs font-black uppercase text-[#1D4533]">Core Identity (3 Essential Fields)</h3>
+                  <span className="text-[9px] text-[#5E3122]">Primary attributes for mobile registration</span>
                 </div>
-
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {['All', 'Goods', 'Assets', 'Documents', 'People', 'Supply'].map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setTypeCategoryFilter(cat);
-                      }}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                        typeCategoryFilter === cat
-                          ? 'bg-[#1D4533] text-[#F7EAE0] shadow-xs'
-                          : 'bg-[#F7EAE0]/50 border border-[#F9D2BA] text-[#5E3122] hover:bg-white'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAddCoreField(1)}
+                  className="px-2 py-1 rounded-lg bg-[#1D4533] text-[#F7EAE0] font-bold text-[10px] flex items-center gap-1 shrink-0"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Field</span>
+                </button>
               </div>
 
-              {/* Entity Type Card Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                {filteredTypeDefinitions.map((def) => {
-                  const isSelected = selectedEntityType === def.id;
-                  const Icon = def.icon;
+              <div className="space-y-2">
+                {coreFields.slice(0, 3).map((field, idx) => {
+                  const isRequired = idx === 0 || field.key === 'name' || field.label.toLowerCase().includes('name');
                   return (
-                    <button
-                      key={def.id}
-                      type="button"
-                      onClick={() => handleEntityTypeChange(def.id)}
-                      className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-2 ${
-                        isSelected
-                          ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-md ring-2 ring-[#F9D2BA]'
-                          : 'bg-[#F7EAE0]/40 border-[#F9D2BA] hover:bg-white hover:border-[#1D4533]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <Icon className="w-5 h-5" />
-                        {isSelected && <Check className="w-4 h-4 text-[#F9D2BA]" />}
+                    <div key={field.id} className="p-2.5 rounded-xl bg-[#F7EAE0]/30 border border-[#F9D2BA] space-y-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1 flex-1">
+                          <input
+                            type="text"
+                            value={field.label}
+                            onChange={(e) => handleCoreLabelChange(field.id, e.target.value)}
+                            className="font-black text-[#5E3122] uppercase text-[10px] bg-transparent focus:outline-none flex-1 truncate"
+                          />
+                          {isRequired && (
+                            <span className="text-red-600 font-black text-sm leading-none shrink-0" title="Required Field">*</span>
+                          )}
+                          <Edit3 className="w-3 h-3 text-[#5E3122] opacity-60" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCoreField(field.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </div>
-                      <div>
-                        <span className="text-xs font-black block leading-tight">{def.label}</span>
-                        <span className={`text-[9px] font-medium block truncate mt-0.5 ${isSelected ? 'text-[#F9D2BA]' : 'text-[#5E3122]'}`}>
-                          {def.category}
-                        </span>
-                      </div>
-                    </button>
+
+                      {field.type === 'select' && field.options ? (
+                        <select
+                          value={field.value}
+                          onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#F9D2BA] bg-white text-xs font-bold text-[#1D4533]"
+                        >
+                          {field.options.map((opt) => (
+                            <option key={opt} value={opt.split(' / ')[0]}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={field.value}
+                          onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
+                          placeholder={field.placeholder || 'Enter value...'}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#F9D2BA] bg-white text-xs text-[#1D4533] focus:outline-none"
+                        />
+                      )}
+                    </div>
                   );
                 })}
               </div>
+            </div>
+          )}
 
-              {/* Operational QR Purpose with Auto-Mapping Indicator */}
-              <div className="pt-4 border-t border-[#F9D2BA] space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <h3 className="text-base font-extrabold text-[#1D4533] flex items-center gap-2">
-                      <span>Operational QR Purpose</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1D4533] text-[#F9D2BA]">
-                        Auto-Mapped
-                      </span>
-                    </h3>
-                    <p className="text-xs text-[#5E3122] font-medium mt-0.5">
-                      {currentMapping.purposeRationale}
-                    </p>
-                  </div>
+          {/* MOBILE STEP 3: FULLY CUSTOMIZABLE CONTACT CHANNELS & LINKS */}
+          {mobileStep === 3 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-[#F9D2BA] pb-2">
+                <div>
+                  <h3 className="text-xs font-black uppercase text-[#1D4533]">Contact &amp; Web Links</h3>
+                  <span className="text-[9px] text-[#5E3122]">Every channel can be renamed, edited, or deleted</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {allPurposeMeta.map((pur) => {
-                    const isSelected = selectedPurpose === pur.id;
-                    const isAutoRecommended = currentMapping.suggestedPurpose === pur.id;
-                    return (
-                      <button
-                        key={pur.id}
-                        type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setSelectedPurpose(pur.id);
-                        }}
-                        className={`p-3.5 rounded-2xl border text-left transition-all ${
-                          isSelected
-                            ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-sm ring-1 ring-[#1D4533]'
-                            : 'bg-white border-[#F9D2BA] hover:bg-[#F7EAE0]/40'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-xs font-extrabold ${isSelected ? 'text-[#F9D2BA]' : 'text-[#1D4533]'}`}>
-                              {pur.label}
-                            </span>
-                            {isAutoRecommended && (
-                              <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${isSelected ? 'bg-[#F9D2BA] text-[#1D4533]' : 'bg-[#1D4533] text-[#F7EAE0]'}`}>
-                                Suggested
-                              </span>
-                            )}
-                          </div>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-[#F9D2BA]" />}
-                        </div>
-                        <p className={`text-[10px] mt-1 leading-snug font-medium ${isSelected ? 'text-[#F7EAE0]/90' : 'text-[#5E3122]'}`}>
-                          {pur.description}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
+                <button
+                  type="button"
+                  onClick={handleAddContactChannel}
+                  className="px-2 py-1 rounded-lg bg-[#1D4533] text-[#F7EAE0] font-bold text-[10px] flex items-center gap-1 shrink-0"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Channel</span>
+                </button>
               </div>
 
-            </div>
+              <div className="space-y-2.5">
+                {contactChannels.map((channel) => {
+                  let isFormatValid = true;
+                  if (channel.type === 'url') isFormatValid = isValidUrl(channel.value);
+                  else if (channel.type === 'email') isFormatValid = isValidEmail(channel.value);
+                  else if (channel.type === 'phone') isFormatValid = isValidPhone(channel.value);
 
-            {/* Next Step Nav */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  setCurrentStep(2);
-                }}
-                className="px-6 py-3 rounded-2xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2"
-              >
-                <span>Continue to Core Identity (Step 2)</span>
-                <ChevronRight className="w-4 h-4 text-[#F9D2BA]" />
-              </button>
-            </div>
-          </div>
-        )}
+                  return (
+                    <div key={channel.id} className="p-2.5 rounded-xl bg-[#F7EAE0]/30 border border-[#F9D2BA] space-y-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1 flex-1 min-w-0">
+                          <input
+                            type="text"
+                            value={channel.label}
+                            onChange={(e) => handleContactLabelChange(channel.id, e.target.value)}
+                            className="font-black text-[#5E3122] uppercase text-[10px] bg-transparent focus:outline-none flex-1 truncate"
+                            title="Click to rename contact channel"
+                          />
+                          <Edit3 className="w-3 h-3 text-[#5E3122] opacity-60 shrink-0" />
+                        </div>
+                        {channel.value && (
+                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                            isFormatValid ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
+                          }`}>
+                            {isFormatValid ? '✓ Valid' : '⚠️ Format'}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveContactChannel(channel.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded shrink-0"
+                          title="Delete channel"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
 
-        {/* ══════════════════════════════════════════════════════════════════
-            STEP 2: CORE IDENTITY METADATA (FULLY EDITABLE & DELETABLE)
-        ══════════════════════════════════════════════════════════════════ */}
-        {currentStep === 2 && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-6">
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F9D2BA] pb-3">
-                <div>
-                  <h2 className="text-xl font-extrabold text-[#1D4533] flex items-center gap-2">
-                    <span>2. Core Identity Metadata</span>
-                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#1D4533] text-[#F9D2BA]">
-                      Fully Customizable
+                      <input
+                        type={channel.type === 'email' ? 'email' : channel.type === 'phone' ? 'tel' : 'text'}
+                        value={channel.value}
+                        onChange={(e) => handleContactValueChange(channel.id, e.target.value)}
+                        placeholder={channel.placeholder || 'Enter value...'}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-[#F9D2BA] bg-white text-xs text-[#1D4533] focus:outline-none"
+                      />
+                    </div>
+                  );
+                })}
+
+                {/* Description Summary with Renameable Label */}
+                <div className="p-2.5 rounded-xl bg-[#F7EAE0]/30 border border-[#F9D2BA] space-y-1 pt-2">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={descriptionLabel}
+                      onChange={(e) => setDescriptionLabel(e.target.value)}
+                      className="font-black text-[#5E3122] uppercase text-[10px] bg-transparent focus:outline-none flex-1 truncate"
+                      title="Click to rename description label"
+                    />
+                    <Edit3 className="w-3 h-3 text-[#5E3122] opacity-60" />
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Operational notes, summary, and instructions..."
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-[#F9D2BA] bg-white text-xs text-[#1D4533] focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE STEP 4: MEDIA & PDF ATTACHMENTS */}
+          {mobileStep === 4 && (
+            <div className="space-y-4">
+              {/* PDF Upload */}
+              <div className="p-3 rounded-xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase text-[#1D4533]">
+                    Official PDF Document (Max 10MB)
+                  </span>
+                  {pdfDocument && (
+                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                      Attached
                     </span>
-                  </h2>
-                  <p className="text-xs text-[#5E3122] font-medium mt-0.5">
-                    Every field name has an edit pen sign <Edit3 className="w-3 h-3 inline text-[#5E3122]" /> to rename. You can delete unwanted fields or add new ones.
-                  </p>
+                  )}
+                </div>
+
+                {pdfDocument ? (
+                  <div className="p-2.5 rounded-lg bg-white border border-[#F9D2BA] flex items-center justify-between">
+                    <div className="truncate">
+                      <span className="font-bold text-xs text-[#1D4533] block truncate">{pdfDocument.name}</span>
+                      <span className="text-[10px] text-[#5E3122]">{(pdfDocument.size / (1024 * 1024)).toFixed(2)} MB</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPdfDocument(null)}
+                      className="p-1 text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="border border-dashed border-[#1D4533]/40 bg-white p-3 rounded-xl text-center block cursor-pointer">
+                    <FileText className="w-5 h-5 text-[#5E3122] mx-auto mb-1" />
+                    <span className="text-xs font-bold text-[#1D4533] block">Select PDF Document</span>
+                    <span className="text-[9px] text-[#5E3122]/70 block">SOP, Certificate or Manual</span>
+                    <input type="file" accept="application/pdf,.pdf" onChange={handlePdfUpload} className="hidden" />
+                  </label>
+                )}
+              </div>
+
+              {/* Image Upload */}
+              <div className="p-3 rounded-xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase text-[#1D4533]">
+                    Asset Images (Max 2 • 5MB Each)
+                  </span>
+                  <span className="text-[9px] font-bold text-[#5E3122]">{galleryImages.length}/2</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {galleryImages.map((img) => (
+                    <div key={img.id} className="relative rounded-lg border border-[#F9D2BA] overflow-hidden h-20 bg-white">
+                      <img src={img.dataUrl} alt={img.name} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setGalleryImages(prev => prev.filter(i => i.id !== img.id))}
+                        className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-md"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {galleryImages.length < 2 && (
+                    <label className="border border-dashed border-[#1D4533]/40 bg-white rounded-lg flex flex-col items-center justify-center cursor-pointer h-20 p-1 text-center">
+                      <Plus className="w-4 h-4 text-[#5E3122]" />
+                      <span className="text-[10px] font-bold text-[#1D4533]">Add Photo</span>
+                      <span className="text-[8px] text-[#5E3122]/70">Max 5MB</span>
+                      <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE STEP 5: SPECIFICATIONS & LONG NOTES */}
+          {mobileStep === 5 && (
+            <div className="space-y-4">
+              <SectionFieldBuilder
+                sections={formData.builderSections}
+                onChangeSections={(updated: BuilderSection[]) => setFormData(prev => ({ ...prev, builderSections: updated }))}
+              />
+
+              <div className="space-y-1 pt-2 border-t border-[#F9D2BA]">
+                <label className="text-[10px] font-black uppercase text-[#5E3122] block">
+                  Extended SOP / Long Instructions
+                </label>
+                <textarea
+                  rows={4}
+                  value={longDescription}
+                  onChange={(e) => setLongDescription(e.target.value)}
+                  placeholder="Detailed multi-line instructions, safety standards, operating guides..."
+                  className="w-full px-3 py-2 rounded-xl border border-[#F9D2BA] text-xs text-[#1D4533] focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE STEP 6: CONNECTED INTELLIGENCE & GRAPH RELATIONSHIPS */}
+          {mobileStep === 6 && (
+            <div className="space-y-4">
+              <div className="border-b border-[#F9D2BA] pb-2">
+                <h3 className="text-xs font-black uppercase text-[#1D4533] flex items-center gap-1.5">
+                  <Network className="w-4 h-4 text-[#1D4533]" />
+                  <span>Connected Intelligence &amp; Graph Links</span>
+                </h3>
+                <p className="text-[10px] text-[#5E3122]">
+                  Link this entity into the enterprise knowledge network (e.g. Asset at Location, Component of Machine).
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-2.5">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-[#5E3122] block">
+                    Relation Verb:
+                  </label>
+                  <select
+                    value={newRelType}
+                    onChange={(e) => setNewRelType(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#F9D2BA] text-xs font-bold text-[#1D4533] focus:outline-none"
+                  >
+                    <option value="OWNS">OWNS (Customer owns Product)</option>
+                    <option value="LOCATED_AT">LOCATED_AT (Asset at Facility)</option>
+                    <option value="MANUFACTURED_BY">MANUFACTURED_BY (Entity by OEM)</option>
+                    <option value="SERVICED_BY">SERVICED_BY (Unit by Technician)</option>
+                    <option value="PART_OF_BATCH">PART_OF_BATCH (Unit in Lot)</option>
+                    <option value="CERTIFIED_BY">CERTIFIED_BY (Complies with ISO/CE)</option>
+                    <option value="CONTAINS">CONTAINS (Parent contains Component)</option>
+                    <option value="REQUIRES_WORK_ORDER">REQUIRES_WORK_ORDER (Task/Ticket)</option>
+                    <option value="ASSIGNED_TO">ASSIGNED_TO (Tool to Operator)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-[#5E3122] block">
+                    Target Entity Node:
+                  </label>
+                  <select
+                    value={newRelTargetId}
+                    onChange={(e) => setNewRelTargetId(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#F9D2BA] text-xs font-bold text-[#1D4533] focus:outline-none"
+                  >
+                    <option value="">-- Choose Existing Entity --</option>
+                    {existingEntities.map((ent) => (
+                      <option key={ent.id} value={ent.id}>
+                        {ent.name} ({ent.sku || ent.uniqrCode})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <button
                   type="button"
-                  onClick={handleLoadSmartPreset}
-                  className="px-3 py-1.5 rounded-xl bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-bold text-xs flex items-center gap-1.5 self-start sm:self-auto border border-[#F9D2BA]"
+                  disabled={!newRelTargetId}
+                  onClick={handleAddRelationship}
+                  className="w-full py-2 bg-[#1D4533] text-[#F7EAE0] font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-40"
                 >
-                  <Wand2 className="w-3.5 h-3.5 text-[#5E3122]" />
-                  <span>Reset to Schema Defaults</span>
+                  <Plus className="w-3.5 h-3.5 text-[#F9D2BA]" />
+                  <span>Link Graph Connection</span>
                 </button>
               </div>
 
-              {/* 2-Column Fully Dynamic Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                
-                {/* Column 1 */}
-                <div className="space-y-4 p-5 rounded-2xl bg-[#F7EAE0]/30 border border-[#F9D2BA] flex flex-col justify-between">
-                  <div className="space-y-3.5">
-                    <div className="border-b border-[#F9D2BA]/60 pb-2 flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-[#1D4533]">
-                        Column 1 Identification Fields ({col1Fields.length})
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => handleAddCoreField(1)}
-                        className="text-[11px] font-extrabold text-[#1D4533] hover:text-[#5E3122] flex items-center gap-1 bg-[#F9D2BA] hover:bg-[#F7EAE0] px-2 py-0.5 rounded-lg transition-colors"
+              {formData.relationships.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-[#F9D2BA]/60">
+                  <span className="text-[10px] font-black uppercase text-[#1D4533] block">
+                    Active Links ({formData.relationships.length}):
+                  </span>
+                  <div className="space-y-1.5">
+                    {formData.relationships.map((rel) => (
+                      <div
+                        key={rel.id}
+                        className="p-2.5 rounded-xl bg-white border border-[#F9D2BA] flex items-center justify-between gap-2 shadow-2xs text-xs"
                       >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Field</span>
-                      </button>
+                        <div className="truncate flex items-center gap-1.5 min-w-0">
+                          <LinkIcon className="w-3.5 h-3.5 text-[#1D4533] shrink-0" />
+                          <span className="font-mono text-[9px] font-black text-[#5E3122] bg-[#F7EAE0] px-1.5 py-0.5 rounded">
+                            {rel.relationType}
+                          </span>
+                          <span className="font-extrabold text-[#1D4533] truncate">
+                            {rel.targetEntityName}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRelationship(rel.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded shrink-0"
+                          title="Remove link"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MOBILE STEP 7: REVIEW & FINAL STAMP */}
+          {mobileStep === 7 && (
+            <div className="space-y-4 text-center">
+              <div className="p-4 rounded-2xl bg-[#1D4533] text-[#F7EAE0] space-y-2">
+                <ShieldCheck className="w-8 h-8 text-[#F9D2BA] mx-auto" />
+                <h3 className="font-black text-sm text-[#F7EAE0]">Ready to Stamp Digital Identity</h3>
+                <p className="text-[11px] text-[#F9D2BA]/90 font-mono">
+                  Token: {formData.uniqrCode}
+                </p>
+                <div className="flex justify-center gap-2 text-[10px] text-[#F7EAE0]/80 pt-1 border-t border-[#F9D2BA]/20">
+                  <span>Type: <strong>{selectedEntityType}</strong></span>
+                  <span>•</span>
+                  <span>Purpose: <strong>{selectedPurpose}</strong></span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSubmit()}
+                className="w-full py-3.5 rounded-2xl bg-[#1D4533] text-[#F9D2BA] hover:text-white font-black text-xs shadow-lg flex items-center justify-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>{productToEdit ? 'Save Entity Changes' : 'Register & Generate QR'}</span>
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* Mobile Navigation Controls */}
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <button
+            type="button"
+            disabled={mobileStep === 1}
+            onClick={() => { sound.playClick(); setMobileStep(prev => Math.max(1, prev - 1)); }}
+            className="flex-1 py-2.5 rounded-xl border border-[#F9D2BA] bg-white text-[#5E3122] font-bold text-xs flex items-center justify-center gap-1 disabled:opacity-40"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            <span>Prev</span>
+          </button>
+
+          {mobileStep < 7 ? (
+            <button
+              type="button"
+              onClick={() => { sound.playClick(); setMobileStep(prev => Math.min(7, prev + 1)); }}
+              className="flex-1 py-2.5 rounded-xl bg-[#1D4533] text-[#F7EAE0] font-extrabold text-xs flex items-center justify-center gap-1 shadow-sm"
+            >
+              <span>Next Step</span>
+              <ChevronRight className="w-3.5 h-3.5 text-[#F9D2BA]" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              className="flex-1 py-2.5 rounded-xl bg-[#1D4533] text-[#F9D2BA] font-black text-xs flex items-center justify-center gap-1 shadow-md"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Save &amp; Stamp</span>
+            </button>
+          )}
+        </div>
+
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          DESKTOP VIEW: 4-STEP POWER-USER WORKSPACE (hidden md:block)
+      ══════════════════════════════════════════════════════════════════ */}
+      <div className="hidden md:block space-y-6">
+        
+        {/* ─── 1. TOP HEADER & QUICK ACTIONS ─── */}
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-[#1D4533] font-extrabold text-xs uppercase tracking-wider mb-1">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="hover:underline flex items-center gap-1 text-[#5E3122]"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Inventory</span>
+              </button>
+              <span>/</span>
+              <span>Universal Entity Creator</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D4533] tracking-tight">
+              {productToEdit ? 'Edit Universal Entity Record' : 'Register New Universal Entity'}
+            </h1>
+            <p className="text-xs sm:text-sm text-[#5E3122] mt-0.5 font-medium">
+              Dynamic &amp; editable schema. All fields and section titles can be renamed with the pen icon, customized, or deleted. Nothing is fixed.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleLoadSmartPreset}
+              className="px-3.5 py-2.5 rounded-xl bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-extrabold text-xs transition-all border border-[#F9D2BA] flex items-center gap-1.5 shadow-xs"
+              title="Auto-fill recommended industry defaults for this entity classification"
+            >
+              <Wand2 className="w-4 h-4 text-[#5E3122]" />
+              <span>✨ Auto-Fill Realistic Defaults</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              className="px-6 py-2.5 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2"
+            >
+              <Save className="w-4 h-4 text-[#F9D2BA]" />
+              <span>{productToEdit ? 'Save Changes' : 'Register & Save'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ─── 2. 4-STEP PROGRESS STEPPER ─── */}
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#F9D2BA] shadow-sm">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {wizardSteps.map((step) => {
+              const isActive = currentStep === step.num;
+              const isCompleted = currentStep > step.num;
+              return (
+                <button
+                  key={step.num}
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setCurrentStep(step.num);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all flex items-center gap-3 ${
+                    isActive
+                      ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-md ring-2 ring-[#F9D2BA]'
+                      : isCompleted
+                      ? 'bg-[#F7EAE0]/70 text-[#1D4533] border-[#F9D2BA]'
+                      : 'bg-white text-[#5E3122] border-[#F9D2BA]/60 hover:bg-[#F7EAE0]/30'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0 ${
+                    isActive
+                      ? 'bg-[#F9D2BA] text-[#1D4533]'
+                      : isCompleted
+                      ? 'bg-[#1D4533] text-[#F7EAE0]'
+                      : 'bg-[#F7EAE0] text-[#5E3122]'
+                  }`}>
+                    {isCompleted ? <Check className="w-4 h-4" /> : step.num}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-black block truncate leading-tight">{step.title}</span>
+                    <span className={`text-[10px] font-medium block truncate ${isActive ? 'text-[#F9D2BA]' : 'text-[#5E3122]'}`}>
+                      {step.desc}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ─── 3. STEP CONTENT WORKSPACE ─── */}
+        <div className="space-y-6">
+
+          {/* ══════════════════════════════════════════════════════════════════
+              STEP 1: CLASSIFICATION & PURPOSE (THE "WHAT & WHY")
+          ══════════════════════════════════════════════════════════════════ */}
+          {currentStep === 1 && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-6">
+                
+                {/* ⭐ MY CUSTOM SCHEMA TEMPLATES (ELEVATED TO TOP) */}
+                <div className="p-4 rounded-2xl bg-[#F7EAE0]/70 border border-[#F9D2BA] space-y-3 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F9D2BA] pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center font-bold">
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-wider text-[#1D4533]">
+                          ⭐ My Custom Schema Templates
+                        </h3>
+                        <span className="text-[10px] text-[#5E3122] font-semibold">
+                          Your custom workflows appear on top for 1-click re-use
+                        </span>
+                      </div>
                     </div>
 
-                    {col1Fields.length === 0 ? (
-                      <div className="text-center py-6 border border-dashed border-[#F9D2BA] rounded-xl bg-white/60 text-[#5E3122]">
-                        <p className="text-xs font-medium">No fields in Column 1.</p>
+                    <button
+                      type="button"
+                      onClick={handleSaveCurrentAsTemplate}
+                      className="px-3 py-1.5 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-[11px] flex items-center gap-1.5 transition-all shadow-xs self-start sm:self-auto"
+                    >
+                      <Save className="w-3.5 h-3.5 text-[#F9D2BA]" />
+                      <span>Save Current as Template</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {customTemplates.map((tpl) => (
+                      <div
+                        key={tpl.id}
+                        onClick={() => handleApplyTemplate(tpl)}
+                        className="p-3 rounded-xl bg-white border border-[#F9D2BA] hover:border-[#1D4533] shadow-xs cursor-pointer group transition-all flex flex-col justify-between"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] uppercase font-black px-2 py-0.5 rounded bg-[#F7EAE0] text-[#1D4533]">
+                              {tpl.category}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteTemplate(tpl.id, e)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-[#5E3122] hover:text-red-600 rounded transition-opacity"
+                              title="Delete template"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <h4 className="font-extrabold text-xs text-[#1D4533] leading-snug group-hover:text-[#5E3122]">
+                            {tpl.name}
+                          </h4>
+                          {tpl.description && (
+                            <p className="text-[10px] text-[#5E3122] line-clamp-1">
+                              {tpl.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="pt-2 mt-2 border-t border-[#F9D2BA]/40 flex items-center justify-between text-[9px] font-bold text-[#5E3122]">
+                          <span>{tpl.coreFields.length} Core Fields • {tpl.builderSections.length} Specs</span>
+                          <span className="text-[#1D4533] group-hover:underline">Apply →</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Filter by Category Tabs */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F9D2BA] pb-3">
+                  <div>
+                    <h2 className="text-xl font-extrabold text-[#1D4533]">
+                      1. Choose Universal Entity Classification
+                    </h2>
+                    <p className="text-xs text-[#5E3122] font-medium mt-0.5">
+                      Select what you are digitizing. All fields will auto-adapt to fit the industry domain.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                    {['All', 'Physical', 'Operations', 'Supply Chain', 'People', 'Documents', 'Workflow'].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setTypeCategoryFilter(cat);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                          typeCategoryFilter === cat
+                            ? 'bg-[#1D4533] text-[#F7EAE0] shadow-xs'
+                            : 'bg-[#F7EAE0]/50 border border-[#F9D2BA] text-[#5E3122] hover:bg-white'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Entity Type Card Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {filteredTypeDefinitions.map((def) => {
+                    const isSelected = selectedEntityType === def.id;
+                    const Icon = def.icon;
+                    return (
+                      <button
+                        key={def.id}
+                        type="button"
+                        onClick={() => handleEntityTypeChange(def.id)}
+                        className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-2 ${
+                          isSelected
+                            ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-md ring-2 ring-[#F9D2BA]'
+                            : 'bg-[#F7EAE0]/40 border-[#F9D2BA] hover:bg-white hover:border-[#1D4533]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <Icon className="w-5 h-5" />
+                          {isSelected && <Check className="w-4 h-4 text-[#F9D2BA]" />}
+                        </div>
+                        <div>
+                          <span className="text-xs font-black block leading-tight">{def.label}</span>
+                          <span className={`text-[9px] font-medium block truncate mt-0.5 ${isSelected ? 'text-[#F9D2BA]' : 'text-[#5E3122]'}`}>
+                            {def.category}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Operational QR Purpose with Auto-Mapping Indicator */}
+                <div className="pt-4 border-t border-[#F9D2BA] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-base font-extrabold text-[#1D4533] flex items-center gap-2">
+                        <span>Operational QR Purpose</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1D4533] text-[#F9D2BA]">
+                          Auto-Mapped
+                        </span>
+                      </h3>
+                      <p className="text-xs text-[#5E3122] font-medium mt-0.5">
+                        {currentMapping.purposeRationale}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {allPurposeMeta.map((pur) => {
+                      const isSelected = selectedPurpose === pur.id;
+                      const isAutoRecommended = currentMapping.suggestedPurpose === pur.id;
+                      return (
+                        <button
+                          key={pur.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSelectedPurpose(pur.id);
+                          }}
+                          className={`p-3.5 rounded-2xl border text-left transition-all ${
+                            isSelected
+                              ? 'bg-[#1D4533] text-[#F7EAE0] border-[#1D4533] shadow-sm ring-1 ring-[#1D4533]'
+                              : 'bg-white border-[#F9D2BA] hover:bg-[#F7EAE0]/40'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-xs font-extrabold ${isSelected ? 'text-[#F9D2BA]' : 'text-[#1D4533]'}`}>
+                                {pur.label}
+                              </span>
+                              {isAutoRecommended && (
+                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${isSelected ? 'bg-[#F9D2BA] text-[#1D4533]' : 'bg-[#1D4533] text-[#F7EAE0]'}`}>
+                                  Suggested
+                                </span>
+                              )}
+                            </div>
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-[#F9D2BA]" />}
+                          </div>
+                          <p className={`text-[10px] mt-1 leading-snug font-medium ${isSelected ? 'text-[#F7EAE0]/90' : 'text-[#5E3122]'}`}>
+                            {pur.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Next Step Nav */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setCurrentStep(2);
+                  }}
+                  className="px-6 py-3 rounded-2xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2"
+                >
+                  <span>Continue to Core Identity (Step 2)</span>
+                  <ChevronRight className="w-4 h-4 text-[#F9D2BA]" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              STEP 2: CORE IDENTITY METADATA (FULLY EDITABLE & DELETABLE)
+          ══════════════════════════════════════════════════════════════════ */}
+          {currentStep === 2 && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-6">
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F9D2BA] pb-3">
+                  <div>
+                    <h2 className="text-xl font-extrabold text-[#1D4533] flex items-center gap-2">
+                      <span>2. Core Identity Metadata</span>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#1D4533] text-[#F9D2BA]">
+                        Fully Customizable
+                      </span>
+                    </h2>
+                    <p className="text-xs text-[#5E3122] font-medium mt-0.5">
+                      Every field name has an edit pen sign <Edit3 className="w-3 h-3 inline text-[#5E3122]" /> to rename. You can delete unwanted fields or add new ones.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleLoadSmartPreset}
+                    className="px-3 py-1.5 rounded-xl bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-bold text-xs flex items-center gap-1.5 self-start sm:self-auto border border-[#F9D2BA]"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Reset to Industry Defaults</span>
+                  </button>
+                </div>
+
+                {/* 2-Column Editable Dynamic Core Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Column 1 */}
+                  <div className="space-y-4 p-5 rounded-2xl bg-[#F7EAE0]/30 border border-[#F9D2BA] flex flex-col justify-between">
+                    <div className="space-y-3.5">
+                      <div className="border-b border-[#F9D2BA]/60 pb-2 flex items-center justify-between">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-[#1D4533]">
+                          Column 1 Primary Identity ({col1Fields.length})
+                        </h3>
                         <button
                           type="button"
                           onClick={() => handleAddCoreField(1)}
-                          className="mt-2 text-xs text-[#1D4533] font-bold underline"
+                          className="text-[11px] font-extrabold text-[#1D4533] hover:text-[#5E3122] flex items-center gap-1 bg-[#F9D2BA] hover:bg-[#F7EAE0] px-2 py-0.5 rounded-lg transition-colors"
                         >
-                          + Add First Field
+                          <Plus className="w-3 h-3" />
+                          <span>Add Field</span>
                         </button>
                       </div>
-                    ) : (
-                      col1Fields.map((field) => (
-                        <div key={field.id} className="space-y-1 bg-white p-3 rounded-xl border border-[#F9D2BA]/80 shadow-2xs group/field">
-                          
-                          {/* Editable Field Label Header with Pen Sign & Delete */}
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1 flex-1 min-w-0 bg-[#F7EAE0]/40 hover:bg-[#F7EAE0] px-1.5 py-0.5 rounded focus-within:bg-[#F7EAE0] border border-transparent focus-within:border-[#F9D2BA] transition-colors">
-                              <input
-                                type="text"
-                                value={field.label}
-                                onChange={(e) => handleCoreLabelChange(field.id, e.target.value)}
-                                placeholder="Field Label"
-                                className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px] bg-transparent focus:outline-none flex-1 truncate"
-                                title="Click to rename field label"
-                              />
-                              <Edit3 className="w-3 h-3 text-[#5E3122] opacity-70 group-hover/field:opacity-100 shrink-0" />
-                            </div>
 
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveCoreField(field.id)}
-                              className="p-1 text-[#5E3122] hover:text-red-600 rounded transition-colors shrink-0"
-                              title="Delete this field"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {/* Field Input */}
-                          <input
-                            type="text"
-                            value={field.value}
-                            onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
-                            placeholder={field.placeholder || 'Enter value...'}
-                            className="w-full px-3 py-2 rounded-lg border border-[#F9D2BA] bg-white text-[#1D4533] font-semibold text-xs focus:outline-none focus:border-[#1D4533]"
-                          />
+                      {col1Fields.length === 0 ? (
+                        <div className="text-center py-6 border border-dashed border-[#F9D2BA] rounded-xl bg-white/60 text-[#5E3122]">
+                          <p className="text-xs font-medium">No fields in Column 1.</p>
+                          <button
+                            type="button"
+                            onClick={() => handleAddCoreField(1)}
+                            className="mt-2 text-xs text-[#1D4533] font-bold underline"
+                          >
+                            + Add First Field
+                          </button>
                         </div>
-                      ))
-                    )}
-                  </div>
+                      ) : (
+                        col1Fields.map((field) => {
+                          const isRequired = field.key === 'name' || field.label.toLowerCase().includes('name') || field.key === 'identityNumber' || field.label.toLowerCase().includes('primary');
+                          return (
+                            <div key={field.id} className="space-y-1 bg-white p-3 rounded-xl border border-[#F9D2BA]/80 shadow-2xs group/field">
+                              
+                              {/* Editable Field Label Header with Pen Sign & Delete */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1 flex-1 min-w-0 bg-[#F7EAE0]/40 hover:bg-[#F7EAE0] px-1.5 py-0.5 rounded focus-within:bg-[#F7EAE0] border border-transparent focus-within:border-[#F9D2BA] transition-colors">
+                                  <input
+                                    type="text"
+                                    value={field.label}
+                                    onChange={(e) => handleCoreLabelChange(field.id, e.target.value)}
+                                    placeholder="Field Label"
+                                    className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px] bg-transparent focus:outline-none flex-1 truncate"
+                                    title="Click to rename field label"
+                                  />
+                                  {isRequired && (
+                                    <span className="text-red-600 font-black text-sm leading-none shrink-0" title="Required Field">*</span>
+                                  )}
+                                  <Edit3 className="w-3 h-3 text-[#5E3122] opacity-70 group-hover/field:opacity-100 shrink-0" />
+                                </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleAddCoreField(1)}
-                    className="w-full py-2 border border-dashed border-[#1D4533]/40 hover:border-[#1D4533] bg-white/50 hover:bg-white text-[#1D4533] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 mt-2"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Custom Field to Column 1</span>
-                  </button>
-                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveCoreField(field.id)}
+                                  className="p-1 text-[#5E3122] hover:text-red-600 rounded transition-colors shrink-0"
+                                  title="Delete this field"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
 
-                {/* Column 2 */}
-                <div className="space-y-4 p-5 rounded-2xl bg-[#F7EAE0]/30 border border-[#F9D2BA] flex flex-col justify-between">
-                  <div className="space-y-3.5">
-                    <div className="border-b border-[#F9D2BA]/60 pb-2 flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-[#1D4533]">
-                        Column 2 Authority &amp; Logistics ({col2Fields.length})
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => handleAddCoreField(2)}
-                        className="text-[11px] font-extrabold text-[#1D4533] hover:text-[#5E3122] flex items-center gap-1 bg-[#F9D2BA] hover:bg-[#F7EAE0] px-2 py-0.5 rounded-lg transition-colors"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Field</span>
-                      </button>
+                              {/* Field Input (Select or Text) */}
+                              {field.type === 'select' && field.options ? (
+                                <select
+                                  value={field.value}
+                                  onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
+                                  className="w-full px-3 py-2 rounded-lg border border-[#F9D2BA] bg-white text-[#1D4533] font-bold text-xs focus:outline-none"
+                                >
+                                  {field.options.map((opt) => (
+                                    <option key={opt} value={opt.split(' / ')[0]}>
+                                      {opt}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={field.value}
+                                  onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
+                                  placeholder={field.placeholder || 'Enter value...'}
+                                  className="w-full px-3 py-2 rounded-lg border border-[#F9D2BA] bg-white text-[#1D4533] text-xs focus:outline-none focus:border-[#1D4533]"
+                                />
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
 
-                    {col2Fields.length === 0 ? (
-                      <div className="text-center py-6 border border-dashed border-[#F9D2BA] rounded-xl bg-white/60 text-[#5E3122]">
-                        <p className="text-xs font-medium">No fields in Column 2.</p>
+                    <button
+                      type="button"
+                      onClick={() => handleAddCoreField(1)}
+                      className="w-full py-2 border border-dashed border-[#1D4533]/40 hover:border-[#1D4533] bg-white/50 hover:bg-white text-[#1D4533] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 mt-2"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Custom Field to Column 1</span>
+                    </button>
+                  </div>
+
+                  {/* Column 2 */}
+                  <div className="space-y-4 p-5 rounded-2xl bg-[#F7EAE0]/30 border border-[#F9D2BA] flex flex-col justify-between">
+                    <div className="space-y-3.5">
+                      <div className="border-b border-[#F9D2BA]/60 pb-2 flex items-center justify-between">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-[#1D4533]">
+                          Column 2 Authority &amp; Logistics ({col2Fields.length})
+                        </h3>
                         <button
                           type="button"
                           onClick={() => handleAddCoreField(2)}
-                          className="mt-2 text-xs text-[#1D4533] font-bold underline"
+                          className="text-[11px] font-extrabold text-[#1D4533] hover:text-[#5E3122] flex items-center gap-1 bg-[#F9D2BA] hover:bg-[#F7EAE0] px-2 py-0.5 rounded-lg transition-colors"
                         >
-                          + Add First Field
+                          <Plus className="w-3 h-3" />
+                          <span>Add Field</span>
                         </button>
                       </div>
-                    ) : (
-                      col2Fields.map((field) => (
-                        <div key={field.id} className="space-y-1 bg-white p-3 rounded-xl border border-[#F9D2BA]/80 shadow-2xs group/field">
-                          
-                          {/* Editable Field Label Header with Pen Sign & Delete */}
-                          <div className="flex items-center justify-between gap-2">
+
+                      {col2Fields.length === 0 ? (
+                        <div className="text-center py-6 border border-dashed border-[#F9D2BA] rounded-xl bg-white/60 text-[#5E3122]">
+                          <p className="text-xs font-medium">No fields in Column 2.</p>
+                          <button
+                            type="button"
+                            onClick={() => handleAddCoreField(2)}
+                            className="mt-2 text-xs text-[#1D4533] font-bold underline"
+                          >
+                            + Add First Field
+                          </button>
+                        </div>
+                      ) : (
+                        col2Fields.map((field) => {
+                          const isRequired = field.key === 'identityNumber' || field.label.toLowerCase().includes('authority');
+                          return (
+                            <div key={field.id} className="space-y-1 bg-white p-3 rounded-xl border border-[#F9D2BA]/80 shadow-2xs group/field">
+                              
+                              {/* Editable Field Label Header with Pen Sign & Delete */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1 flex-1 min-w-0 bg-[#F7EAE0]/40 hover:bg-[#F7EAE0] px-1.5 py-0.5 rounded focus-within:bg-[#F7EAE0] border border-transparent focus-within:border-[#F9D2BA] transition-colors">
+                                  <input
+                                    type="text"
+                                    value={field.label}
+                                    onChange={(e) => handleCoreLabelChange(field.id, e.target.value)}
+                                    placeholder="Field Label"
+                                    className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px] bg-transparent focus:outline-none flex-1 truncate"
+                                    title="Click to rename field label"
+                                  />
+                                  {isRequired && (
+                                    <span className="text-red-600 font-black text-sm leading-none shrink-0" title="Required Field">*</span>
+                                  )}
+                                  <Edit3 className="w-3 h-3 text-[#5E3122] opacity-70 group-hover/field:opacity-100 shrink-0" />
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveCoreField(field.id)}
+                                  className="p-1 text-[#5E3122] hover:text-red-600 rounded transition-colors shrink-0"
+                                  title="Delete this field"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              {/* Field Input (Select or Text) */}
+                              {field.type === 'select' && field.options ? (
+                                <select
+                                  value={field.value}
+                                  onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
+                                  className="w-full px-3 py-2 rounded-lg border border-[#F9D2BA] bg-white text-[#1D4533] font-bold text-xs focus:outline-none"
+                                >
+                                  {field.options.map((opt) => (
+                                    <option key={opt} value={opt.split(' / ')[0]}>
+                                      {opt}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={field.value}
+                                  onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
+                                  placeholder={field.placeholder || 'Enter value...'}
+                                  className="w-full px-3 py-2 rounded-lg border border-[#F9D2BA] bg-white text-[#1D4533] text-xs focus:outline-none focus:border-[#1D4533]"
+                                />
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAddCoreField(2)}
+                      className="w-full py-2 border border-dashed border-[#1D4533]/40 hover:border-[#1D4533] bg-white/50 hover:bg-white text-[#1D4533] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 mt-2"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Custom Field to Column 2</span>
+                    </button>
+                  </div>
+
+                </div>
+
+                {/* Read-Only Permanent QR Token with Quick Copy */}
+                <div className="p-4 rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center font-bold shrink-0 shadow-xs">
+                      <QrCode className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-black text-[#5E3122] block tracking-wider">
+                        Permanent SHA-256 QR Token (Auto-Generated &amp; Immutable)
+                      </span>
+                      <span className="font-mono text-sm font-black text-[#1D4533]">
+                        {formData.uniqrCode}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        const freshCode = generateUniqueToken(storage.getProducts());
+                        setFormData(prev => ({ ...prev, uniqrCode: freshCode }));
+                      }}
+                      className="px-3 py-2 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] hover:bg-[#F9D2BA] font-bold text-xs flex items-center gap-1.5 shadow-xs"
+                      title="Generate a new random unique QR Token"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Regenerate</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyToken}
+                      className="px-4 py-2 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] hover:bg-[#F9D2BA] font-bold text-xs flex items-center gap-1.5 shadow-xs"
+                    >
+                      {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedToken ? 'Token Copied!' : 'Copy Token'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tags Manager */}
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <label className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px]">Classification Tags</label>
+                    <Edit3 className="w-3 h-3 text-[#5E3122] opacity-60" />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 p-3 rounded-2xl border border-[#F9D2BA] bg-[#F7EAE0]/30">
+                    {formData.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-2.5 py-1 rounded-lg bg-[#1D4533] text-[#F7EAE0] text-[11px] font-bold flex items-center gap-1.5 shadow-xs"
+                      >
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="text-[#F9D2BA] hover:text-white"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+
+                    <div className="flex items-center gap-1.5 flex-1 min-w-[140px]">
+                      <input
+                        type="text"
+                        placeholder="Add tag (Press Enter)..."
+                        value={formData.tagInput}
+                        onChange={(e) => setFormData(prev => ({ ...prev, tagInput: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                        className="flex-1 px-2.5 py-1 bg-white rounded-lg border border-[#F9D2BA] text-xs text-[#1D4533] focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddTag}
+                        className="px-3 py-1 bg-[#1D4533] text-[#F7EAE0] rounded-lg text-xs font-bold"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <label className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px]">Description Summary</label>
+                    <Edit3 className="w-3 h-3 text-[#5E3122] opacity-60" />
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Detailed description of the entity, operational parameters, and specifications..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#F9D2BA] bg-white text-[#1D4533] text-xs focus:outline-none focus:border-[#1D4533]"
+                  />
+                </div>
+
+                {/* ─── CONTACT CHANNELS & OFFICIAL PORTAL URL (CUSTOMIZABLE) ─── */}
+                <div className="pt-4 border-t border-[#F9D2BA] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-[#1D4533] flex items-center gap-1.5">
+                        <LinkIcon className="w-3.5 h-3.5 text-[#5E3122]" />
+                        <span>Contact Channels &amp; Web Resources ({contactChannels.length})</span>
+                      </h3>
+                      <p className="text-[10px] text-[#5E3122] font-semibold">
+                        Public action links on the digital identity passport (customizable &amp; deletable)
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddContactChannel}
+                      className="px-3 py-1.5 rounded-xl bg-[#1D4533] text-[#F7EAE0] font-bold text-xs flex items-center gap-1.5 shadow-xs hover:bg-[#5E3122] transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-[#F9D2BA]" />
+                      <span>Add Custom Channel</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {contactChannels.map((channel) => {
+                      let isFormatValid = true;
+                      if (channel.type === 'url') isFormatValid = isValidUrl(channel.value);
+                      else if (channel.type === 'email') isFormatValid = isValidEmail(channel.value);
+                      else if (channel.type === 'phone') isFormatValid = isValidPhone(channel.value);
+
+                      return (
+                        <div key={channel.id} className="p-3 rounded-xl bg-white border border-[#F9D2BA] shadow-2xs space-y-1.5 group/chan">
+                          <div className="flex items-center justify-between gap-1">
                             <div className="flex items-center gap-1 flex-1 min-w-0 bg-[#F7EAE0]/40 hover:bg-[#F7EAE0] px-1.5 py-0.5 rounded focus-within:bg-[#F7EAE0] border border-transparent focus-within:border-[#F9D2BA] transition-colors">
                               <input
                                 type="text"
-                                value={field.label}
-                                onChange={(e) => handleCoreLabelChange(field.id, e.target.value)}
-                                placeholder="Field Label"
-                                className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px] bg-transparent focus:outline-none flex-1 truncate"
-                                title="Click to rename field label"
+                                value={channel.label}
+                                onChange={(e) => handleContactLabelChange(channel.id, e.target.value)}
+                                className="font-black text-[#5E3122] uppercase tracking-wider text-[10px] bg-transparent focus:outline-none flex-1 truncate"
+                                title="Click to rename contact channel"
                               />
-                              <Edit3 className="w-3 h-3 text-[#5E3122] opacity-70 group-hover/field:opacity-100 shrink-0" />
+                              <Edit3 className="w-3 h-3 text-[#5E3122] opacity-70 group-hover/chan:opacity-100 shrink-0" />
                             </div>
-
+                            {channel.value && (
+                              <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                                isFormatValid ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
+                              }`}>
+                                {isFormatValid ? '✓ Valid' : '⚠️ Format'}
+                              </span>
+                            )}
                             <button
                               type="button"
-                              onClick={() => handleRemoveCoreField(field.id)}
+                              onClick={() => handleRemoveContactChannel(channel.id)}
                               className="p-1 text-[#5E3122] hover:text-red-600 rounded transition-colors shrink-0"
-                              title="Delete this field"
+                              title="Delete channel"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
 
-                          {/* Field Input (Select or Text) */}
-                          {field.type === 'select' && field.options ? (
-                            <select
-                              value={field.value}
-                              onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-[#F9D2BA] bg-white text-[#1D4533] font-bold text-xs focus:outline-none"
-                            >
-                              {field.options.map((opt) => (
-                                <option key={opt} value={opt.split(' / ')[0]}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              type="text"
-                              value={field.value}
-                              onChange={(e) => handleCoreValueChange(field.id, e.target.value)}
-                              placeholder={field.placeholder || 'Enter value...'}
-                              className="w-full px-3 py-2 rounded-lg border border-[#F9D2BA] bg-white text-[#1D4533] text-xs focus:outline-none focus:border-[#1D4533]"
-                            />
-                          )}
+                          <input
+                            type={channel.type === 'email' ? 'email' : channel.type === 'phone' ? 'tel' : 'text'}
+                            placeholder={channel.placeholder || 'Enter value...'}
+                            value={channel.value}
+                            onChange={(e) => handleContactValueChange(channel.id, e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-[#F9D2BA] bg-white text-xs text-[#1D4533] focus:outline-none focus:border-[#1D4533]"
+                          />
                         </div>
-                      ))
-                    )}
+                      );
+                    })}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleAddCoreField(2)}
-                    className="w-full py-2 border border-dashed border-[#1D4533]/40 hover:border-[#1D4533] bg-white/50 hover:bg-white text-[#1D4533] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 mt-2"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Custom Field to Column 2</span>
-                  </button>
                 </div>
 
-              </div>
-
-              {/* Read-Only Permanent QR Token with Quick Copy */}
-              <div className="p-4 rounded-2xl bg-[#F7EAE0] border border-[#F9D2BA] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D4533] text-[#F9D2BA] flex items-center justify-center font-bold shrink-0 shadow-xs">
-                    <QrCode className="w-5 h-5" />
+                {/* ─── MEDIA & ATTACHMENTS (PDF Upto 10MB, Images Upto 5MB) ─── */}
+                <div className="pt-4 border-t border-[#F9D2BA] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-[#1D4533] flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-[#5E3122]" />
+                        <span>Media &amp; Official Document Attachments</span>
+                      </h3>
+                      <p className="text-[10px] text-[#5E3122] font-semibold">
+                        Support for 1 Official PDF (up to 10MB) &amp; 2 Asset Images (up to 5MB each)
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-black text-[#5E3122] block tracking-wider">
-                      Permanent SHA-256 QR Token (Auto-Generated &amp; Immutable)
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Official PDF Document Upload */}
+                    <div className="p-4 rounded-2xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase tracking-wider text-[#1D4533] flex items-center gap-1.5">
+                          <FileText className="w-4 h-4 text-[#5E3122]" />
+                          <span>Official PDF Document (Max 10MB)</span>
+                        </span>
+                        {pdfDocument && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            Attached
+                          </span>
+                        )}
+                      </div>
+
+                      {pdfDocument ? (
+                        <div className="p-3 rounded-xl bg-white border border-[#F9D2BA] flex items-center justify-between gap-2 shadow-2xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-bold shrink-0">
+                              PDF
+                            </div>
+                            <div className="truncate">
+                              <span className="font-bold text-xs text-[#1D4533] block truncate">
+                                {pdfDocument.name}
+                              </span>
+                              <span className="text-[10px] text-[#5E3122] font-medium">
+                                {(pdfDocument.size / (1024 * 1024)).toFixed(2)} MB • Verified
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              sound.playClick();
+                              setPdfDocument(null);
+                            }}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                            title="Remove PDF"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="border-2 border-dashed border-[#1D4533]/30 hover:border-[#1D4533] bg-white/70 hover:bg-white p-4 rounded-xl text-center cursor-pointer transition-all block">
+                          <FileText className="w-6 h-6 text-[#5E3122] mx-auto mb-1" />
+                          <span className="text-xs font-bold text-[#1D4533] block">Upload Official PDF Document</span>
+                          <span className="text-[10px] text-[#5E3122]/80 font-medium block mt-0.5">
+                            SOP, Manual, Certificate, or Spec Sheet (Up to 10MB)
+                          </span>
+                          <input
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            onChange={handlePdfUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Gallery Asset Images Upload */}
+                    <div className="p-4 rounded-2xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase tracking-wider text-[#1D4533] flex items-center gap-1.5">
+                          <ShoppingBag className="w-4 h-4 text-[#5E3122]" />
+                          <span>Asset Gallery Images (Max 2 • 5MB Each)</span>
+                        </span>
+                        <span className="text-[10px] font-bold text-[#5E3122]">
+                          {galleryImages.length}/2 Images
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {galleryImages.map((img) => (
+                          <div key={img.id} className="relative group rounded-xl border border-[#F9D2BA] overflow-hidden bg-white shadow-2xs h-24">
+                            <img src={img.dataUrl} alt={img.name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between p-1.5">
+                              <span className="text-[9px] text-white font-bold truncate">
+                                {(img.size / (1024 * 1024)).toFixed(1)} MB
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  sound.playClick();
+                                  setGalleryImages(prev => prev.filter(i => i.id !== img.id));
+                                }}
+                                className="p-1 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {galleryImages.length < 2 && (
+                          <label className="border-2 border-dashed border-[#1D4533]/30 hover:border-[#1D4533] bg-white/70 hover:bg-white rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all h-24 p-2 text-center">
+                            <Plus className="w-5 h-5 text-[#5E3122] mb-0.5" />
+                            <span className="text-[11px] font-bold text-[#1D4533]">Add Image</span>
+                            <span className="text-[9px] text-[#5E3122]/70">Max 5MB</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─── EXTENDED SOP & LONG TEXT INSTRUCTIONS ─── */}
+                <div className="pt-4 border-t border-[#F9D2BA] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-wider text-[#1D4533]">
+                      Extended SOP / Long Instructions / Notes
+                    </label>
+                    <span className="text-[10px] text-[#5E3122] font-semibold">
+                      {longDescription.length} characters
                     </span>
-                    <span className="font-mono text-sm font-black text-[#1D4533]">
-                      {formData.uniqrCode}
-                    </span>
                   </div>
+                  <textarea
+                    rows={4}
+                    value={longDescription}
+                    onChange={(e) => setLongDescription(e.target.value)}
+                    placeholder="Detailed multi-line instructions, standard operating procedures, maintenance steps, safety guidelines..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#F9D2BA] bg-white text-[#1D4533] text-xs focus:outline-none focus:border-[#1D4533]"
+                  />
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
-                      const freshCode = generateUniqueToken(storage.getProducts());
-                      setFormData(prev => ({ ...prev, uniqrCode: freshCode }));
-                    }}
-                    className="px-3 py-2 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] hover:bg-[#F9D2BA] font-bold text-xs flex items-center gap-1.5 shadow-xs"
-                    title="Generate a new random unique QR Token"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Regenerate</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleCopyToken}
-                    className="px-4 py-2 rounded-xl bg-white border border-[#F9D2BA] text-[#1D4533] hover:bg-[#F9D2BA] font-bold text-xs flex items-center gap-1.5 shadow-xs"
-                  >
-                    {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedToken ? 'Token Copied!' : 'Copy Token'}</span>
-                  </button>
-                </div>
               </div>
 
-              {/* Tags Manager */}
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <label className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px]">Classification Tags</label>
-                  <Edit3 className="w-3 h-3 text-[#5E3122] opacity-60" />
-                </div>
-                <div className="flex flex-wrap items-center gap-2 p-3 rounded-2xl border border-[#F9D2BA] bg-[#F7EAE0]/30">
-                  {formData.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2.5 py-1 rounded-lg bg-[#1D4533] text-[#F7EAE0] text-[11px] font-bold flex items-center gap-1.5 shadow-xs"
-                    >
-                      <span>{tag}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="text-[#F9D2BA] hover:text-white"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
+              {/* Stepper Navigation Buttons */}
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setCurrentStep(1);
+                  }}
+                  className="px-5 py-2.5 rounded-xl border border-[#F9D2BA] text-[#5E3122] hover:bg-[#F7EAE0] font-bold text-xs flex items-center gap-1.5"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Back to Step 1</span>
+                </button>
 
-                  <div className="flex items-center gap-1.5 flex-1 min-w-[140px]">
-                    <input
-                      type="text"
-                      placeholder="Add tag (Press Enter)..."
-                      value={formData.tagInput}
-                      onChange={(e) => setFormData(prev => ({ ...prev, tagInput: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddTag();
-                        }
-                      }}
-                      className="flex-1 px-2.5 py-1 bg-white rounded-lg border border-[#F9D2BA] text-xs text-[#1D4533] focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddTag}
-                      className="px-3 py-1 bg-[#1D4533] text-[#F7EAE0] rounded-lg text-xs font-bold"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setCurrentStep(3);
+                  }}
+                  className="px-6 py-3 rounded-2xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2"
+                >
+                  <span>Continue to Dynamic Specs (Step 3)</span>
+                  <ChevronRight className="w-4 h-4 text-[#F9D2BA]" />
+                </button>
               </div>
-
-              {/* Description */}
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <label className="font-extrabold text-[#5E3122] uppercase tracking-wider text-[10px]">Description Summary</label>
-                  <Edit3 className="w-3 h-3 text-[#5E3122] opacity-60" />
-                </div>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Detailed description of the entity, operational parameters, and specifications..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#F9D2BA] bg-white text-[#1D4533] text-xs focus:outline-none focus:border-[#1D4533]"
-                />
-              </div>
-
             </div>
-
-            {/* Stepper Navigation Buttons */}
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  setCurrentStep(1);
-                }}
-                className="px-5 py-2.5 rounded-xl border border-[#F9D2BA] text-[#5E3122] hover:bg-[#F7EAE0] font-bold text-xs flex items-center gap-1.5"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Back to Step 1</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  setCurrentStep(3);
-                }}
-                className="px-6 py-3 rounded-2xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2"
-              >
-                <span>Continue to Dynamic Specs (Step 3)</span>
-                <ChevronRight className="w-4 h-4 text-[#F9D2BA]" />
-              </button>
-            </div>
-          </div>
-        )}
+          )}
 
         {/* ══════════════════════════════════════════════════════════════════
             STEP 3: DYNAMIC SPECIFICATIONS & SECTIONS (THE "CUSTOM DATA")
@@ -1639,13 +2641,18 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
                   3. Dynamic Specifications &amp; Custom Sections
                 </h2>
                 <p className="text-xs text-[#5E3122] font-medium mt-0.5">
-                  Pre-configured specification blocks for <strong className="text-[#1D4533]">{getEntitySchema(selectedEntityType).label}</strong>. Section titles and field names can be edited directly inline with the pen sign.
+                  Categorize technical parameters, BOM details, compliance metrics, and inspection criteria.
                 </p>
               </div>
 
               <SectionFieldBuilder
                 sections={formData.builderSections}
-                onChangeSections={(sections) => setFormData(prev => ({ ...prev, builderSections: sections }))}
+                onChangeSections={(updated: BuilderSection[]) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    builderSections: updated
+                  }));
+                }}
               />
 
             </div>
@@ -1672,7 +2679,7 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
                 }}
                 className="px-6 py-3 rounded-2xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-md flex items-center gap-2"
               >
-                <span>Continue to Graph &amp; Stamp (Step 4)</span>
+                <span>Continue to Graph Network (Step 4)</span>
                 <ChevronRight className="w-4 h-4 text-[#F9D2BA]" />
               </button>
             </div>
@@ -1687,55 +2694,52 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F9D2BA] shadow-sm space-y-6">
               
               <div className="border-b border-[#F9D2BA] pb-3">
-                <h2 className="text-xl font-extrabold text-[#1D4533]">
-                  4. Inter-Entity Graph Relationships
+                <h2 className="text-xl font-extrabold text-[#1D4533] flex items-center gap-2">
+                  <Network className="w-5 h-5 text-[#1D4533]" />
+                  <span>4. Connected Intelligence &amp; Graph Relationships</span>
                 </h2>
                 <p className="text-xs text-[#5E3122] font-medium mt-0.5">
-                  Visual node connection builder to link machines, batches, facilities, certificates, and customer records
+                  Connect this entity into the enterprise knowledge graph (e.g. Machine contains Component, Batch belongs to Location).
                 </p>
               </div>
 
-              {/* Visual Graph Relationship Builder */}
-              <div className="p-5 rounded-3xl bg-[#F7EAE0]/50 border border-[#F9D2BA] space-y-4">
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  
-                  {/* Origin Node Pill */}
-                  <div className="p-3 bg-[#1D4533] text-[#F7EAE0] rounded-2xl border border-[#1D4533] text-xs font-bold flex items-center gap-2 shrink-0">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#F9D2BA] animate-pulse" />
-                    <span>This {getEntitySchema(selectedEntityType).label}</span>
-                  </div>
-
-                  {/* Relationship Verb Selector */}
-                  <div className="w-full sm:w-auto">
+              {/* Relationship Linker */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#F7EAE0]/40 border border-[#F9D2BA] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex-1 space-y-1">
+                    <label className="text-[10px] font-black uppercase text-[#5E3122]">
+                      Link Relation Verb:
+                    </label>
                     <select
                       value={newRelType}
                       onChange={(e) => setNewRelType(e.target.value as any)}
-                      className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl border border-[#F9D2BA] bg-white text-xs font-bold text-[#1D4533] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#F9D2BA] text-xs font-extrabold text-[#1D4533] focus:outline-none"
                     >
-                      <option value="LOCATED_AT">LOCATED_AT (Facility / Location)</option>
-                      <option value="MANUFACTURED_BY">MANUFACTURED_BY (Factory / Line)</option>
-                      <option value="CERTIFIED_BY">CERTIFIED_BY (Document / Lab)</option>
-                      <option value="SERVICED_BY">SERVICED_BY (Service / Maintenance Org)</option>
-                      <option value="ASSOCIATED_WITH">ASSOCIATED_WITH (Asset / Gateway / Unit)</option>
-                      <option value="CONTAINS">CONTAINS (Parent Assembly / Lot)</option>
-                      <option value="PART_OF_BATCH">PART_OF_BATCH (Sub-component / Batch)</option>
-                      <option value="OWNS">OWNS (Customer / Organization)</option>
-                      <option value="REQUIRES_WORK_ORDER">REQUIRES_WORK_ORDER (Task / Ticket)</option>
-                      <option value="ASSIGNED_TO">ASSIGNED_TO (Staff / Custodian)</option>
+                      <option value="OWNS">OWNS (Customer owns Product)</option>
+                      <option value="LOCATED_AT">LOCATED_AT (Asset at Warehouse/Facility)</option>
+                      <option value="MANUFACTURED_BY">MANUFACTURED_BY (Entity by OEM)</option>
+                      <option value="SERVICED_BY">SERVICED_BY (Machine by Technician)</option>
+                      <option value="PART_OF_BATCH">PART_OF_BATCH (Unit in Production Lot)</option>
+                      <option value="CERTIFIED_BY">CERTIFIED_BY (Complies with ISO/CE)</option>
+                      <option value="CONTAINS">CONTAINS (Parent contains Component)</option>
+                      <option value="REQUIRES_WORK_ORDER">REQUIRES_WORK_ORDER (Maintenance Task)</option>
+                      <option value="ASSIGNED_TO">ASSIGNED_TO (Tool to Operator)</option>
                     </select>
                   </div>
 
-                  {/* Target Node Selector */}
-                  <div className="flex-1 w-full">
+                  <div className="flex-1 space-y-1">
+                    <label className="text-[10px] font-black uppercase text-[#5E3122]">
+                      Target Entity Node:
+                    </label>
                     <select
                       value={newRelTargetId}
                       onChange={(e) => setNewRelTargetId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#F9D2BA] bg-white text-xs font-bold text-[#1D4533] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#F9D2BA] text-xs font-bold text-[#1D4533] focus:outline-none"
                     >
-                      <option value="">-- Select Target Entity in Network --</option>
+                      <option value="">-- Choose Existing Entity to Link --</option>
                       {existingEntities.map((ent) => (
                         <option key={ent.id} value={ent.id}>
-                          {ent.name} ({ent.entityType || 'Entity'}) — {ent.uniqrCode}
+                          {ent.name} ({ent.sku || ent.uniqrCode})
                         </option>
                       ))}
                     </select>
@@ -1746,7 +2750,7 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
                     type="button"
                     disabled={!newRelTargetId}
                     onClick={handleAddRelationship}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-40 shrink-0"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-40 shrink-0 mt-auto"
                   >
                     <Plus className="w-4 h-4 text-[#F9D2BA]" />
                     <span>Link Node</span>
@@ -1836,5 +2840,7 @@ export const CreateProductWorkspace: React.FC<CreateProductWorkspaceProps> = ({
       </div>
 
     </div>
-  );
+
+  </div>
+);
 };

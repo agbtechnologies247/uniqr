@@ -131,6 +131,23 @@ export interface UniversalEntity {
   locationObject?: LocationObject;
   paymentDetails?: UniversalPayment;
   imageUrl?: string;
+  pdfDocument?: {
+    name: string;
+    size: number;
+    dataUrl: string;
+    uploadedAt: string;
+  };
+  galleryImages?: {
+    id: string;
+    name: string;
+    size: number;
+    dataUrl: string;
+    uploadedAt: string;
+  }[];
+  websiteUrl?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  longDescription?: string;
 
   // ─── Level 4: QR Behavior, Purpose & Actions ──────────────────────────────
   qrPurpose: QrPurpose;

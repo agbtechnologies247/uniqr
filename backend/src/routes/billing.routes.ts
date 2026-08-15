@@ -4,8 +4,8 @@ import { validateBody, createOrderSchema, verifyPaymentSchema } from '../middlew
 
 export const billingRouter = Router();
 
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_live_TQ4RXmcwF6YO6G';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'TcONNMBuGqWB1FEm3kMzY0g3';
 
 // POST /api/v1/billing/create-order
 billingRouter.post('/create-order', validateBody(createOrderSchema), async (req: Request, res: Response) => {
@@ -26,7 +26,7 @@ billingRouter.post('/create-order', validateBody(createOrderSchema), async (req:
             amount: amountInPaise,
             currency: 'INR',
             receipt: `rcpt_${Date.now()}`,
-            notes: { planId: planId || 'pro' }
+            notes: { planId: planId || 'pro', payment_method: 'UPI_FIRST' }
           })
         });
         const orderData = await response.json();
@@ -39,21 +39,20 @@ billingRouter.post('/create-order', validateBody(createOrderSchema), async (req:
             amount: amountInPaise,
             currency: 'INR'
           });
+        } else {
+          console.warn('[RAZORPAY ORDERS API INFO]', orderData);
         }
       } catch (err: any) {
         console.error('[RAZORPAY ORDER API ERROR]', err.message);
       }
     }
 
-    // Fallback simulation order
-    const mockOrderId = `order_test_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    // Direct checkout without order_id (Razorpay accepts direct standard checkout)
     return res.json({
       success: true,
-      keyId: RAZORPAY_KEY_ID || 'rzp_test_TPCo3jpV7G3Kwq',
-      orderId: mockOrderId,
+      keyId: RAZORPAY_KEY_ID || 'rzp_live_TQ4RXmcwF6YO6G',
       amount: amountInPaise,
-      currency: 'INR',
-      isFallback: true
+      currency: 'INR'
     });
   } catch (err: any) {
     return res.status(500).json({ error: 'CREATE_ORDER_FAILED', message: err.message });

@@ -32,36 +32,55 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Brand Logo & Sidebar Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {!isPublicSite && onToggleSidebar && (
-            <button
-              onClick={() => {
-                sound.playClick();
-                onToggleSidebar();
-              }}
-              className="hidden md:flex p-2 rounded-xl text-[#F9D2BA] hover:bg-[#5E3122]/80 hover:text-[#F7EAE0] transition-all"
-              title="Toggle Sidebar"
-            >
-              <PanelLeftClose className="w-5 h-5" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  onToggleSidebar();
+                }}
+                className="hidden md:flex p-2 rounded-xl text-[#F9D2BA] hover:bg-[#5E3122]/80 hover:text-[#F7EAE0] transition-all"
+                title="Toggle Sidebar"
+              >
+                <PanelLeftClose className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  onToggleSidebar();
+                }}
+                className="md:hidden p-2 rounded-xl text-[#F9D2BA] bg-[#5E3122]/60 hover:text-[#F7EAE0] transition-all"
+                title="Open Navigation Menu"
+              >
+                <PanelLeftClose className="w-5 h-5" />
+              </button>
+            </>
           )}
 
           <div 
             onClick={() => {
               sound.playClick();
-              setCurrentTab('landing');
+              if (!isPublicSite && onToggleSidebar) {
+                onToggleSidebar();
+              } else {
+                setCurrentTab('landing');
+              }
             }} 
-            className="flex items-center gap-3 cursor-pointer group focus-visible:ring-2 focus-visible:ring-[#F9D2BA] rounded-2xl"
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group focus-visible:ring-2 focus-visible:ring-[#F9D2BA] rounded-2xl"
             tabIndex={0}
+            title={!isPublicSite ? "Click logo to open menu" : "UniQR Home"}
           >
             <img 
               src="/logo.jpg" 
               alt="UniQR Logo" 
-              className="w-10 h-10 rounded-2xl border border-[#F9D2BA] object-cover shadow-md group-hover:scale-105 transition-transform" 
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl border border-[#F9D2BA] object-cover shadow-md group-hover:scale-105 transition-transform" 
             />
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xl tracking-tight text-[#F7EAE0]">
+                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-[#F7EAE0]">
                   UNIQR
                 </span>
                 <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-pill bg-[#F9D2BA] text-[#5E3122]">

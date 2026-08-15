@@ -129,49 +129,52 @@ export const ProductList: React.FC<ProductListProps> = ({
   return (
     <div className="space-y-6 pb-20 md:pb-8 selection:bg-[#1D4533] selection:text-[#F7EAE0]">
       
-      {/* ─── HEADER BAR ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-[#F9D2BA] shadow-sm">
+      {/* ─── HEADER BAR (COMPACT ON MOBILE) ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-3.5 sm:p-6 rounded-xl sm:rounded-3xl border border-[#F9D2BA] shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#1D4533] text-[#F7EAE0]">
+            <span className="text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#1D4533] text-[#F7EAE0]">
               Universal Entity Core
             </span>
             <span className="text-[10px] font-bold text-[#5E3122]">
               {products.length} Registered Entities
             </span>
           </div>
-          <h1 className="text-2xl font-extrabold text-[#1D4533] flex items-center gap-2 mt-1">
-            <Layers className="w-6 h-6 text-[#1D4533]" />
-            <span>Universal Identity & Entity Repository</span>
+          <h1 className="text-lg sm:text-2xl font-extrabold text-[#1D4533] flex items-center gap-1.5 mt-0.5 sm:mt-1">
+            <Layers className="w-5 h-5 text-[#1D4533]" />
+            <span>Universal Identity &amp; Entity Repository</span>
           </h1>
-          <p className="text-xs text-[#5E3122] mt-0.5 font-medium">
+          <p className="text-[11px] sm:text-xs text-[#5E3122] mt-0.5 font-medium hidden sm:block">
             Manage products, machines, documents, work orders, certificates, and assets with permanent QR identities.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button
+            type="button"
             onClick={exportCsv}
-            className="px-3.5 py-2.5 rounded-xl border border-[#F9D2BA] bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all"
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl border border-[#F9D2BA] bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-bold text-xs flex items-center gap-1 shadow-xs transition-all"
           >
-            <Download className="w-4 h-4 text-[#1D4533]" />
-            <span>Export CSV</span>
+            <Download className="w-3.5 h-3.5 text-[#1D4533]" />
+            <span>CSV Export</span>
           </button>
 
           <button
+            type="button"
             onClick={onOpenCsvImport}
-            className="px-3.5 py-2.5 rounded-xl border border-[#F9D2BA] bg-white hover:bg-[#F7EAE0] text-[#1D4533] font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all"
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl border border-[#F9D2BA] bg-white hover:bg-[#F7EAE0] text-[#1D4533] font-bold text-xs flex items-center gap-1 shadow-xs transition-all"
           >
-            <FileSpreadsheet className="w-4 h-4 text-[#1D4533]" />
-            <span>Import CSV</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 text-[#1D4533]" />
+            <span>Import</span>
           </button>
 
           <button
+            type="button"
             onClick={onOpenNewProduct}
-            className="px-5 py-2.5 rounded-xl bg-[#1D4533] text-[#F7EAE0] hover:bg-[#5E3122] font-bold text-xs flex items-center gap-2 shadow-md transition-all"
+            className="px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#1D4533] text-[#F7EAE0] hover:bg-[#5E3122] font-bold text-xs flex items-center gap-1.5 shadow-md transition-all ml-auto sm:ml-0"
           >
-            <PlusCircle className="w-4 h-4 text-[#F9D2BA]" />
-            <span>Create Universal Entity</span>
+            <PlusCircle className="w-3.5 h-3.5 text-[#F9D2BA]" />
+            <span>Create Entity</span>
           </button>
         </div>
       </div>

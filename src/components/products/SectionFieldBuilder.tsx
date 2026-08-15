@@ -66,6 +66,55 @@ const SUPPORTED_FIELD_TYPES: FieldType[] = [
   'Hidden/Internal'
 ];
 
+export const getValidationRulesForFieldType = (type: FieldType): Partial<FieldValidationRule> => {
+  switch (type) {
+    case 'Email':
+      return {
+        regex: '^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$',
+        regexDescription: 'Valid RFC Email (e.g. user@company.com)',
+        placeholder: 'user@company.com'
+      };
+    case 'Phone':
+      return {
+        regex: '^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\\s\\./0-9]*$',
+        regexDescription: 'Valid Phone Number with Country Code (e.g. +91 98765 43210)',
+        placeholder: '+91 98765 43210'
+      };
+    case 'URL':
+      return {
+        regex: '^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*/?$',
+        regexDescription: 'Valid Web URL (e.g. https://company.com)',
+        placeholder: 'https://company.com'
+      };
+    case 'Number':
+    case 'Currency':
+      return {
+        min: 0,
+        placeholder: '0.00'
+      };
+    case 'Percentage':
+      return {
+        min: 0,
+        max: 100,
+        placeholder: '0%'
+      };
+    case 'Date':
+      return {
+        placeholder: 'YYYY-MM-DD'
+      };
+    case 'GPS Location':
+      return {
+        placeholder: '12.9716, 77.5946'
+      };
+    case 'Barcode':
+      return {
+        placeholder: 'BAR-12345678'
+      };
+    default:
+      return {};
+  }
+};
+
 export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
   sections,
   onChangeSections
@@ -178,6 +227,7 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
   };
 
   const handleDuplicateSection = (sec: BuilderSection) => {
+    sound.playClick();
     const dup: BuilderSection = {
       ...sec,
       id: `sec-${Date.now()}`,
@@ -185,6 +235,22 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
       fields: sec.fields.map(f => ({ ...f, id: `f-${Date.now()}-${Math.random().toString(36).substr(2, 4)}` }))
     };
     onChangeSections([...sections, dup]);
+  };
+
+  const handleDuplicateField = (sectionId: string, field: CustomFieldDef) => {
+    sound.playClick();
+    const dupField: CustomFieldDef = {
+      ...field,
+      id: `f-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      name: `${field.name} (Copy)`
+    };
+    const updated = sections.map(sec => {
+      if (sec.id === sectionId) {
+        return { ...sec, fields: [...sec.fields, dupField] };
+      }
+      return sec;
+    });
+    onChangeSections(updated);
   };
 
   const handleAddField = (sectionId: string) => {
@@ -210,6 +276,7 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
   };
 
   const handleRemoveField = (sectionId: string, fieldId: string) => {
+    sound.playClick();
     const updated = sections.map(sec => {
       if (sec.id === sectionId) {
         return { ...sec, fields: sec.fields.filter(f => f.id !== fieldId) };
@@ -295,53 +362,56 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
               className="bg-white border border-[#F9D2BA] rounded-2xl overflow-hidden shadow-sm"
             >
               {/* Section Header */}
-              <div className="bg-[#1D4533] px-4 py-3 border-b border-[#F9D2BA]/30 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 text-[#F9D2BA] cursor-grab" />
+              <div className="bg-[#1D4533] px-3.5 py-2.5 sm:px-4 sm:py-3 border-b border-[#F9D2BA]/30 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <GripVertical className="w-4 h-4 text-[#F9D2BA] cursor-grab shrink-0" />
                   {sec.isSystemProtected ? (
-                    <span className="font-extrabold text-sm text-[#F7EAE0]">{sec.title}</span>
+                    <span className="font-extrabold text-sm text-[#F7EAE0] truncate">{sec.title}</span>
                   ) : (
-                    <div className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-lg border border-transparent focus-within:border-[#F9D2BA] focus-within:bg-white transition-colors group/title">
+                    <div className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-lg border border-transparent focus-within:border-[#F9D2BA] focus-within:bg-white transition-colors group/title min-w-0">
                       <input
                         type="text"
                         value={sec.title}
                         onChange={(e) => handleSectionTitleChange(sec.id, e.target.value)}
                         placeholder="Section Title"
-                        className="font-extrabold text-sm text-[#F7EAE0] group-focus-within/title:text-[#1D4533] bg-transparent focus:outline-none max-w-[180px] sm:max-w-xs truncate"
+                        className="font-extrabold text-xs sm:text-sm text-[#F7EAE0] group-focus-within/title:text-[#1D4533] bg-transparent focus:outline-none max-w-[140px] sm:max-w-xs truncate"
                         title="Click to rename section"
                       />
                       <Edit3 className="w-3 h-3 text-[#F9D2BA] group-focus-within/title:text-[#1D4533] shrink-0" />
                     </div>
                   )}
                   {sec.isSystemProtected && (
-                    <span className="text-[10px] bg-[#5E3122] text-[#F9D2BA] px-2 py-0.5 rounded-full flex items-center gap-1 font-bold">
-                      <Lock className="w-3 h-3" /> System
+                    <span className="text-[9px] bg-[#5E3122] text-[#F9D2BA] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-bold shrink-0">
+                      <Lock className="w-2.5 h-2.5" /> System
                     </span>
                   )}
-                  <span className="text-[10px] bg-[#F9D2BA] text-[#1D4533] font-bold px-2 py-0.5 rounded-full">
-                    {sec.fields.length} Fields
+                  <span className="text-[9px] bg-[#F9D2BA] text-[#1D4533] font-black px-2 py-0.5 rounded-full shrink-0">
+                    {sec.fields.length}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                   <button
+                    type="button"
                     onClick={() => handleAddField(sec.id)}
-                    className="text-xs bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533] px-2.5 py-1 rounded-lg font-bold flex items-center gap-1"
+                    className="text-[11px] bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533] px-2.5 py-1 rounded-lg font-black flex items-center gap-1 shadow-xs"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Add Field
+                    <Plus className="w-3.5 h-3.5" /> <span>Add Field</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDuplicateSection(sec)}
-                    className="p-1.5 text-[#F7EAE0] hover:text-[#F9D2BA] rounded-lg"
-                    title="Duplicate Section"
+                    className="p-1.5 bg-white/10 hover:bg-white/20 text-[#F7EAE0] hover:text-[#F9D2BA] rounded-lg transition-colors"
+                    title="Clone / Duplicate Section"
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </button>
                   {!sec.isSystemProtected && (
                     <button
+                      type="button"
                       onClick={() => handleRemoveSection(sec.id)}
-                      className="p-1.5 text-[#F9D2BA] hover:text-red-300 rounded-lg"
-                      title="Remove Section"
+                      className="p-1.5 bg-white/10 hover:bg-red-500/20 text-[#F9D2BA] hover:text-red-300 rounded-lg transition-colors"
+                      title="Delete Section"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -350,38 +420,44 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
               </div>
 
               {/* Section Fields Grid */}
-              <div className="p-4 space-y-3 bg-[#FFFFFF]">
+              <div className="p-3 sm:p-4 space-y-2.5 bg-white">
                 {sec.fields.map((field) => (
                   <div
                     key={field.id}
-                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#F7EAE0] p-3 rounded-xl border border-[#F9D2BA]"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-[#F7EAE0]/50 p-2.5 sm:p-3 rounded-xl border border-[#F9D2BA]"
                   >
-                    <div className="flex items-center gap-3 w-full sm:w-1/3">
-                      <GripVertical className="w-3.5 h-3.5 text-[#5E3122] cursor-grab" />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1 bg-white/60 hover:bg-white px-1.5 py-0.5 rounded border border-transparent focus-within:border-[#F9D2BA] transition-colors group/fn">
+                    {/* Field Name & Tag */}
+                    <div className="flex items-center gap-2 w-full sm:w-1/3 min-w-0">
+                      <GripVertical className="w-3.5 h-3.5 text-[#5E3122] cursor-grab shrink-0" />
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-1 bg-white/70 hover:bg-white px-1.5 py-0.5 rounded border border-transparent focus-within:border-[#F9D2BA] transition-colors group/fn">
                           <input
                             type="text"
                             value={field.name}
                             onChange={(e) => handleFieldNameChange(sec.id, field.id, e.target.value)}
-                            className="text-xs font-bold text-[#1D4533] bg-transparent focus:outline-none max-w-[150px] truncate"
+                            className="text-xs font-bold text-[#1D4533] bg-transparent focus:outline-none flex-1 truncate"
                             title="Click to rename field"
                           />
+                          {field.validation?.required && (
+                            <span className="text-red-600 font-black text-sm leading-none shrink-0" title="Required Field">*</span>
+                          )}
                           <Edit3 className="w-3 h-3 text-[#5E3122] opacity-60 group-hover/fn:opacity-100 shrink-0" />
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-[#1D4533] font-mono bg-[#F9D2BA] px-1.5 py-0.5 rounded font-bold">
+                        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                          <span className="text-[9px] text-[#1D4533] font-mono bg-[#F9D2BA] px-1.5 py-0.2 rounded font-black uppercase">
                             {field.type}
                           </span>
                           {field.validation?.required && (
-                            <span className="text-[9px] text-red-700 font-bold uppercase">✓ Required</span>
+                            <span className="text-[9px] text-red-700 font-black flex items-center gap-0.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block"></span> Required
+                            </span>
                           )}
                           {field.validation?.isPublic ? (
-                            <span className="text-[9px] text-emerald-400 flex items-center gap-0.5">
+                            <span className="text-[9px] text-emerald-700 font-bold flex items-center gap-0.5">
                               <Eye className="w-2.5 h-2.5" /> Public
                             </span>
                           ) : (
-                            <span className="text-[9px] text-amber-400 flex items-center gap-0.5">
+                            <span className="text-[9px] text-amber-700 font-bold flex items-center gap-0.5">
                               <EyeOff className="w-2.5 h-2.5" /> Internal
                             </span>
                           )}
@@ -395,45 +471,55 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
                         <select
                           value={String(field.value)}
                           onChange={(e) => handleFieldValueChange(sec.id, field.id, e.target.value)}
-                          className="w-full bg-graphite-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+                          className="w-full bg-white border border-[#F9D2BA] rounded-lg px-2.5 py-1.5 text-xs text-[#1D4533] font-bold focus:outline-none focus:border-[#1D4533]"
                         >
                           {(field.validation?.options || ['Default Option', 'Option A', 'Option B']).map(opt => (
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
                       ) : field.type === 'Boolean' ? (
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-[#F9D2BA]">
                           <input
                             type="checkbox"
                             checked={Boolean(field.value)}
                             onChange={(e) => handleFieldValueChange(sec.id, field.id, e.target.checked)}
-                            className="rounded border-slate-700 text-electric"
+                            className="rounded border-[#F9D2BA] text-[#1D4533] focus:ring-[#1D4533]"
                           />
-                          <span className="text-xs text-slate-300">{field.value ? 'Enabled (True)' : 'Disabled (False)'}</span>
+                          <span className="text-xs font-bold text-[#1D4533]">{field.value ? 'Enabled (Pass / True)' : 'Disabled (Fail / False)'}</span>
                         </label>
                       ) : (
                         <input
                           type={field.type === 'Number' || field.type === 'Currency' ? 'number' : 'text'}
                           value={String(field.value)}
                           onChange={(e) => handleFieldValueChange(sec.id, field.id, e.target.value)}
-                          placeholder={field.validation?.placeholder || `Enter ${field.name}`}
-                          className="w-full bg-graphite-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:border-electric focus:ring-1 focus:ring-electric"
+                          placeholder={field.validation?.placeholder || `Enter ${field.name}...`}
+                          className="w-full bg-white border border-[#F9D2BA] rounded-lg px-2.5 py-1.5 text-xs text-[#1D4533] focus:border-[#1D4533] focus:outline-none"
                         />
                       )}
                     </div>
 
-                    {/* Field Options Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                    {/* Field Touch Actions: Duplicate, Configure Rules, Delete */}
+                    <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
                       <button
+                        type="button"
+                        onClick={() => handleDuplicateField(sec.id, field)}
+                        className="p-1.5 bg-white border border-[#F9D2BA] text-[#5E3122] hover:text-[#1D4533] hover:bg-[#F9D2BA] rounded-lg transition-colors shadow-2xs"
+                        title="Clone / Duplicate Field"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setEditingFieldModal({ sectionId: sec.id, field: { ...field } })}
-                        className="text-[#5E3122] hover:text-[#1D4533] p-0.5 rounded transition-colors"
+                        className="p-1.5 bg-white border border-[#F9D2BA] text-[#5E3122] hover:text-[#1D4533] hover:bg-[#F9D2BA] rounded-lg transition-colors shadow-2xs"
                         title="Configure Validation & Rules"
                       >
                         <Sliders className="w-3.5 h-3.5" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleRemoveField(sec.id, field.id)}
-                        className="text-[#5E3122] hover:text-red-700 p-0.5 rounded transition-colors"
+                        className="p-1.5 bg-white border border-[#F9D2BA] text-red-600 hover:bg-red-50 rounded-lg transition-colors shadow-2xs"
                         title="Delete Field"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -451,6 +537,7 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
 
       {/* Add New Section Button */}
       <button
+        type="button"
         onClick={() => handleAddSection(activeTab)}
         className="w-full py-3 border border-dashed border-[#F9D2BA] hover:border-[#1D4533] rounded-2xl bg-[#F7EAE0] hover:bg-[#F9D2BA] text-[#1D4533] font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
       >
@@ -460,13 +547,14 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
       {/* No-Code Validation Rule Config Modal */}
       {editingFieldModal && (
         <div className="fixed inset-0 z-50 bg-[#5E3122]/60 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white border border-[#F9D2BA] rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-[#5E3122]">
+          <div className="bg-white border border-[#F9D2BA] rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-[#5E3122] animate-in fade-in zoom-in-95 duration-150">
             
             <div className="flex items-center justify-between border-b border-[#F9D2BA] pb-3">
               <h3 className="text-sm font-extrabold text-[#1D4533] flex items-center gap-2">
                 <Settings2 className="w-4 h-4 text-[#1D4533]" /> Field Validation &amp; Rules Builder
               </h3>
               <button
+                type="button"
                 onClick={() => setEditingFieldModal(null)}
                 className="text-[#5E3122] hover:bg-[#F7EAE0] p-1 rounded-lg text-xs font-mono"
               >
@@ -484,19 +572,30 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
                     ...editingFieldModal,
                     field: { ...editingFieldModal.field, name: e.target.value }
                   })}
-                  className="w-full mt-1 bg-[#F7EAE0] border border-[#F9D2BA] rounded-xl p-2.5 text-xs text-[#5E3122] font-bold focus:border-[#1D4533] focus:ring-2 focus:ring-[#1D4533] focus:outline-none"
+                  className="w-full mt-1 bg-[#F7EAE0] border border-[#F9D2BA] rounded-xl p-2.5 text-xs text-[#1D4533] font-bold focus:border-[#1D4533] focus:ring-2 focus:ring-[#1D4533] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#5E3122]">Field Type (28 Supported)</label>
+                <label className="text-xs font-bold text-[#5E3122]">Field Type</label>
                 <select
                   value={editingFieldModal.field.type}
-                  onChange={(e) => setEditingFieldModal({
-                    ...editingFieldModal,
-                    field: { ...editingFieldModal.field, type: e.target.value as FieldType }
-                  })}
-                  className="w-full mt-1 bg-[#F7EAE0] border border-[#F9D2BA] rounded-xl p-2.5 text-xs text-[#5E3122] font-bold focus:border-[#1D4533] focus:ring-2 focus:ring-[#1D4533] focus:outline-none"
+                  onChange={(e) => {
+                    const newType = e.target.value as FieldType;
+                    const autoValidation = getValidationRulesForFieldType(newType);
+                    setEditingFieldModal({
+                      ...editingFieldModal,
+                      field: {
+                        ...editingFieldModal.field,
+                        type: newType,
+                        validation: {
+                          ...editingFieldModal.field.validation,
+                          ...autoValidation
+                        }
+                      }
+                    });
+                  }}
+                  className="w-full mt-1 bg-[#F7EAE0] border border-[#F9D2BA] rounded-xl p-2.5 text-xs text-[#1D4533] font-bold focus:border-[#1D4533] focus:ring-2 focus:ring-[#1D4533] focus:outline-none"
                 >
                   {SUPPORTED_FIELD_TYPES.map(t => (
                     <option key={t} value={t}>{t}</option>
@@ -518,7 +617,9 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
                     })}
                     className="rounded border-[#F9D2BA] bg-white text-[#1D4533] focus:ring-[#1D4533]"
                   />
-                  <span className="text-xs text-[#1D4533] font-extrabold">Required Field</span>
+                  <span className="text-xs text-[#1D4533] font-extrabold flex items-center">
+                    Required <span className="text-red-600 ml-0.5">*</span>
+                  </span>
                 </label>
 
                 <label className="flex items-center gap-2 bg-[#F7EAE0] p-2.5 rounded-xl border border-[#F9D2BA] cursor-pointer">
@@ -552,25 +653,34 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
                       validation: { ...editingFieldModal.field.validation, regex: e.target.value }
                     }
                   })}
-                  className="w-full mt-1 bg-[#F7EAE0] border border-[#F9D2BA] rounded-xl p-2.5 text-xs text-[#5E3122] font-mono font-bold focus:border-[#1D4533] focus:ring-2 focus:ring-[#1D4533] focus:outline-none"
+                  className="w-full mt-1 bg-[#F7EAE0] border border-[#F9D2BA] rounded-xl p-2.5 text-xs text-[#1D4533] font-mono font-bold focus:border-[#1D4533] focus:ring-2 focus:ring-[#1D4533] focus:outline-none"
                 />
+                {editingFieldModal.field.validation?.regexDescription && (
+                  <span className="text-[10px] text-[#5E3122] font-semibold mt-0.5 block">
+                    Rule: {editingFieldModal.field.validation.regexDescription}
+                  </span>
+                )}
               </div>
 
-              {/* Help Text */}
+              {/* Help Text / Placeholder */}
               <div>
-                <label className="text-xs font-bold text-[#5E3122]">Help Text / Tooltip</label>
+                <label className="text-xs font-bold text-[#5E3122]">Input Placeholder / Help Text</label>
                 <input
                   type="text"
                   placeholder="e.g. Serial number printed on back plate"
-                  value={editingFieldModal.field.validation?.helpText || ''}
+                  value={editingFieldModal.field.validation?.placeholder || editingFieldModal.field.validation?.helpText || ''}
                   onChange={(e) => setEditingFieldModal({
                     ...editingFieldModal,
                     field: {
                       ...editingFieldModal.field,
-                      validation: { ...editingFieldModal.field.validation, helpText: e.target.value }
+                      validation: { 
+                        ...editingFieldModal.field.validation, 
+                        placeholder: e.target.value,
+                        helpText: e.target.value 
+                      }
                     }
                   })}
-                  className="w-full mt-1 bg-[#F7EAE0] border border-[#F9D2BA] rounded-xl p-2.5 text-xs text-[#5E3122] font-bold focus:border-[#1D4533] focus:ring-2 focus:ring-[#1D4533] focus:outline-none"
+                  className="w-full mt-1 bg-[#F7EAE0] border border-[#F9D2BA] rounded-xl p-2.5 text-xs text-[#1D4533] font-bold focus:border-[#1D4533] focus:ring-2 focus:ring-[#1D4533] focus:outline-none"
                 />
               </div>
 
@@ -578,12 +688,14 @@ export const SectionFieldBuilder: React.FC<SectionFieldBuilderProps> = ({
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#F9D2BA]">
               <button
+                type="button"
                 onClick={() => setEditingFieldModal(null)}
                 className="px-4 py-2 text-xs text-[#5E3122] font-bold hover:bg-[#F7EAE0] rounded-xl border border-[#F9D2BA]"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => handleSaveFieldValidation(editingFieldModal.sectionId, editingFieldModal.field)}
                 className="px-4 py-2 bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs rounded-xl shadow-md transition-all"
               >

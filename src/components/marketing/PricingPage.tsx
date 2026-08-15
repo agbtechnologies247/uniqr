@@ -44,8 +44,16 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
           </h1>
 
           <p className="text-sm sm:text-base text-[#5E3122] font-semibold leading-relaxed">
-            Choose the right tier for your product catalog — backed by instant Razorpay Checkout and SHA-256 tamper-evident ledgers.
+            Choose the right tier for your product catalog — backed by instant Razorpay UPI Checkout and SHA-256 tamper-evident ledgers.
           </p>
+
+          {/* UPI Priority Callout */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#1D4533] text-[#F7EAE0] text-xs font-bold shadow-sm border border-[#F9D2BA]/40">
+            <span className="px-2 py-0.5 rounded-lg bg-[#F9D2BA] text-[#1D4533] font-black text-[9px] uppercase tracking-wider">
+              UPI 1st Priority
+            </span>
+            <span>⚡ Instant Payment via GPay, PhonePe, Paytm, Cred &amp; UPI QR</span>
+          </div>
 
           <div className="pt-2">
             <button
@@ -137,9 +145,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
 
             <button
               onClick={() => handlePay('pro', 'Pro Growth', 399)}
-              className="w-full py-3 rounded-xl bg-[#5E3122] hover:bg-[#1D4533] text-[#F7EAE0] font-extrabold text-xs shadow-md transition-all"
+              className="w-full py-3 rounded-xl bg-[#5E3122] hover:bg-[#1D4533] text-[#F7EAE0] font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
             >
-              Upgrade to Pro
+              <Zap className="w-3.5 h-3.5 text-[#F9D2BA]" />
+              <span>Pay ₹399 via UPI</span>
             </button>
           </div>
 
@@ -176,9 +185,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
 
             <button
               onClick={() => handlePay('business', 'Business Scale', 999)}
-              className="w-full py-3 rounded-xl bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533] font-extrabold text-xs shadow-lg transition-all"
+              className="w-full py-3 rounded-xl bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533] font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-1.5"
             >
-              Choose Business Scale
+              <Zap className="w-3.5 h-3.5 text-[#1D4533]" />
+              <span>Pay ₹999 via UPI</span>
             </button>
           </div>
 
@@ -211,9 +221,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
 
             <button
               onClick={() => handlePay('factory', 'Factory Scale', 2999)}
-              className="w-full py-3 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all"
+              className="w-full py-3 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md"
             >
-              Choose Factory Scale
+              <Zap className="w-3.5 h-3.5 text-[#F9D2BA]" />
+              <span>Pay ₹2,999 via UPI</span>
             </button>
           </div>
 

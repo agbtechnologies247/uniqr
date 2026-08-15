@@ -81,6 +81,21 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </button>
         </div>
 
+        {/* UPI PRIORITY CALLOUT BANNER */}
+        <div className="mt-4 p-3 rounded-2xl bg-[#1D4533] text-[#F7EAE0] flex items-center justify-between gap-3 text-xs shadow-xs border border-[#F9D2BA]/40">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-lg bg-[#F9D2BA] text-[#1D4533] font-black text-[9px] uppercase tracking-wider shrink-0">
+              UPI 1st Priority
+            </span>
+            <span className="font-bold text-[11px] text-[#F7EAE0] truncate">
+              Instant checkout via Google Pay, PhonePe, Paytm, Cred &amp; UPI QR
+            </span>
+          </div>
+          <span className="text-[10px] text-[#F9D2BA] font-bold shrink-0 hidden sm:inline-block">
+            Highest Success Rate
+          </span>
+        </div>
+
         {/* 5 PLAN CARDS */}
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 py-6">
           {SUBSCRIPTION_TIERS.map((tier) => (
@@ -151,8 +166,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </>
               ) : (
                 <>
-                  <CreditCard className="w-4 h-4 text-[#F9D2BA]" />
-                  <span>{activePlan.id === 'enterprise' ? 'Contact Enterprise Sales' : `Pay ₹${activePlan.priceINR} via Razorpay`}</span>
+                  <Zap className="w-4 h-4 text-[#F9D2BA]" />
+                  <span>{activePlan.id === 'enterprise' ? 'Contact Enterprise Sales' : `Pay ₹${activePlan.priceINR} via UPI / Razorpay`}</span>
                 </>
               )}
             </button>
