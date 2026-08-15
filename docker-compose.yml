@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  uniqr-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uniqr-app-engine
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      - SMTP_HOST=smtp.hostinger.com
+      - SMTP_PORT=465
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - MSG91_AUTH_KEY=${MSG91_AUTH_KEY}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+    volumes:
+      - uniqr_db_data:/app/dist/db.json
+
+volumes:
+  uniqr_db_data:
