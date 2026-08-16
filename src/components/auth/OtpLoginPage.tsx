@@ -259,11 +259,11 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
           cleanCode,
           (data: any) => {
             console.log('[MSG91 VERIFY SUCCESS]', data);
-            completePrimaryVerification(cleanCode);
+            completePrimaryVerification(cleanCode, true, data);
           },
           (err: any) => {
             console.warn('[MSG91 VERIFY NOTICE]', err);
-            completePrimaryVerification(cleanCode);
+            completePrimaryVerification(cleanCode, false);
           }
         );
         return;
@@ -272,7 +272,7 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
       }
     }
 
-    completePrimaryVerification(cleanCode);
+    completePrimaryVerification(cleanCode, false);
   };
 
   const handleVerifyPrimaryOtp = (e: React.FormEvent) => {
@@ -284,16 +284,21 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
     triggerVerifyPrimaryOtp(primaryOtp);
   };
 
-  const completePrimaryVerification = async (cleanCode: string) => {
+  const completePrimaryVerification = async (cleanCode: string, isMsg91Verified = false, msg91Data?: any) => {
     try {
       const res = await fetch('/api/v1/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: primaryInput.trim(), code: cleanCode })
+        body: JSON.stringify({ 
+          target: primaryInput.trim(), 
+          code: cleanCode,
+          msg91Verified: isMsg91Verified,
+          msg91Token: msg91Data
+        })
       });
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok && cleanCode !== '123456' && cleanCode !== '1234') {
+      if (!res.ok && !isMsg91Verified && cleanCode !== '123456' && cleanCode !== '1234') {
         throw new Error(data.message || 'Invalid or expired OTP code');
       }
 
@@ -310,7 +315,7 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
       sound.playClick();
       setStep('SECONDARY_INPUT');
     } catch (err: any) {
-      if (cleanCode === '123456' || cleanCode === '1234') {
+      if (isMsg91Verified || cleanCode === '123456' || cleanCode === '1234') {
         setStep('SECONDARY_INPUT');
       } else {
         setErrorMsg(err.message || 'Invalid OTP code');
@@ -401,14 +406,18 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
       try {
         window.verifyOtp(
           cleanCode,
-          () => completeSecondaryVerification(cleanCode),
-          () => completeSecondaryVerification(cleanCode)
+          (data: any) => {
+            completeSecondaryVerification(cleanCode, true, data);
+          },
+          () => {
+            completeSecondaryVerification(cleanCode, false);
+          }
         );
         return;
       } catch (e) {}
     }
 
-    completeSecondaryVerification(cleanCode);
+    completeSecondaryVerification(cleanCode, false);
   };
 
   const handleVerifySecondaryOtp = (e: React.FormEvent) => {
@@ -420,23 +429,28 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
     triggerVerifySecondaryOtp(secondaryOtp);
   };
 
-  const completeSecondaryVerification = async (cleanCode: string) => {
+  const completeSecondaryVerification = async (cleanCode: string, isMsg91Verified = false, msg91Data?: any) => {
     try {
       const res = await fetch('/api/v1/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: secondaryInput.trim(), code: cleanCode })
+        body: JSON.stringify({ 
+          target: secondaryInput.trim(), 
+          code: cleanCode,
+          msg91Verified: isMsg91Verified,
+          msg91Token: msg91Data
+        })
       });
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok && cleanCode !== '123456' && cleanCode !== '1234') {
+      if (!res.ok && !isMsg91Verified && cleanCode !== '123456' && cleanCode !== '1234') {
         throw new Error(data.message || 'Invalid or expired OTP code');
       }
 
       sound.playClick();
       setStep('PROFILE_BILLING');
     } catch (err: any) {
-      if (cleanCode === '123456' || cleanCode === '1234') {
+      if (isMsg91Verified || cleanCode === '123456' || cleanCode === '1234') {
         setStep('PROFILE_BILLING');
       } else {
         setErrorMsg(err.message || 'Invalid OTP code');

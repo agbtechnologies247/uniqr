@@ -307,16 +307,21 @@ authRouter.post('/send-otp', async (req: Request, res: Response) => {
 // POST /api/v1/auth/verify-otp
 authRouter.post('/verify-otp', async (req: Request, res: Response) => {
   try {
-    const { target, code } = req.body;
+    const { target, code, msg91Verified, msg91Token } = req.body;
     if (!target || !code) {
-      return res.status(400).json({ error: 'Target and 6-digit verification code required' });
+      return res.status(400).json({ error: 'Target and verification code required' });
     }
 
     const cleanTarget = target.trim().toLowerCase();
     const cleanCode = String(code).trim();
     const storedOtp = otpStore[cleanTarget];
 
-    let isValidCode = (storedOtp && storedOtp.code === cleanCode && Date.now() < storedOtp.expiresAt) || cleanCode === '123456' || cleanCode === '1234';
+    let isValidCode = 
+      msg91Verified === true ||
+      Boolean(msg91Token) ||
+      (storedOtp && storedOtp.code === cleanCode && Date.now() < storedOtp.expiresAt) ||
+      cleanCode === '123456' ||
+      cleanCode === '1234';
 
     // If not matching in-memory, check via MSG91 verify API if mobile
     if (!isValidCode && !cleanTarget.includes('@')) {
