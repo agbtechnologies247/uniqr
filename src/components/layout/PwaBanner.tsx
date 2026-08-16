@@ -14,6 +14,9 @@ export const PwaBanner: React.FC<PwaBannerProps> = ({ currentTab = 'dashboard' }
   const isPublicPage = ['landing', 'use-cases', 'features', 'pricing', 'api-docs', 'contact'].includes(currentTab) || currentTab.startsWith('passport-');
 
   useEffect(() => {
+    const isDismissed = localStorage.getItem('uniqr_pwa_dismissed') === 'true';
+    if (isDismissed) return;
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -32,6 +35,7 @@ export const PwaBanner: React.FC<PwaBannerProps> = ({ currentTab = 'dashboard' }
   }, []);
 
   const handleInstall = async () => {
+    localStorage.setItem('uniqr_pwa_dismissed', 'true');
     if (!deferredPrompt) {
       alert('To install UniQR Enterprise App:\n\n1. On Mobile (Chrome / Safari): Tap Share / Menu (⋮) -> "Add to Home Screen" or "Install App".\n2. On Desktop (Chrome / Edge): Click the install icon in your address bar.');
       return;
@@ -43,6 +47,11 @@ export const PwaBanner: React.FC<PwaBannerProps> = ({ currentTab = 'dashboard' }
       setShowBanner(false);
     }
     setDeferredPrompt(null);
+  };
+
+  const handleDismiss = () => {
+    localStorage.setItem('uniqr_pwa_dismissed', 'true');
+    setShowBanner(false);
   };
 
   // Only allow PWA prompt within application screens
@@ -72,7 +81,7 @@ export const PwaBanner: React.FC<PwaBannerProps> = ({ currentTab = 'dashboard' }
           <span>Install App</span>
         </button>
         <button
-          onClick={() => setShowBanner(false)}
+          onClick={handleDismiss}
           className="p-1 text-[#F9D2BA] hover:text-[#F7EAE0]"
           title="Dismiss banner"
         >

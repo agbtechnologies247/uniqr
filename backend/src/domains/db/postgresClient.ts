@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 export interface UserRecord {
   id: string;
@@ -14,6 +16,8 @@ export interface UserRecord {
   avatarUrl?: string;
   role: 'admin' | 'user' | 'enterprise';
   accountStatus: 'active' | 'suspended' | 'deactivated';
+  hasCompletedOnboarding?: boolean;
+  welcomeEmailSent?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -45,6 +49,7 @@ export interface QrIdentityRecord {
 
 class PostgresClient {
   private sessions: SessionRecord[] = [];
+  private usersFile: string = path.join(process.cwd(), 'users_db.json');
   private users: UserRecord[] = [
     {
       id: 'usr-admin-001',
@@ -58,24 +63,63 @@ class PostgresClient {
       gstin: '27AABCA1234F1Z5',
       role: 'admin',
       accountStatus: 'active',
+      hasCompletedOnboarding: true,
+      welcomeEmailSent: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
   ];
 
   constructor() {
-    console.log('[PostgreSQL Engine] Initialized Relational Database Schema.');
+    this.loadUsersFromDisk();
+    console.log('[PostgreSQL Engine] Initialized Relational Database Schema with persistent disk backing.');
+  }
+
+  private loadUsersFromDisk(): void {
+    try {
+      if (fs.existsSync(this.usersFile)) {
+        const raw = fs.readFileSync(this.usersFile, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.users = parsed;
+          console.log(`[PostgreSQL Engine] Loaded ${this.users.length} persisted users from disk.`);
+        }
+      }
+    } catch (e: any) {
+      console.warn('[PostgreSQL Engine] Notice loading users_db.json:', e.message);
+    }
+  }
+
+  private saveUsersToDisk(): void {
+    try {
+      fs.writeFileSync(this.usersFile, JSON.stringify(this.users, null, 2), 'utf-8');
+    } catch (e: any) {
+      console.warn('[PostgreSQL Engine] Notice saving users_db.json:', e.message);
+    }
   }
 
   public async findUserByEmail(email: string): Promise<UserRecord | null> {
     if (!email) return null;
-    return this.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase()) || null;
+    const clean = email.trim().toLowerCase();
+    return this.users.find(u => u.email && u.email.toLowerCase() === clean) || null;
   }
 
   public async findUserByPhone(phone: string): Promise<UserRecord | null> {
     if (!phone) return null;
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    return this.users.find(u => u.phone && u.phone.replace(/[^0-9]/g, '').includes(cleanPhone)) || null;
+    const digits = phone.replace(/[^0-9]/g, '');
+    const last10 = digits.slice(-10);
+    if (!last10 || last10.length < 10) return null;
+
+    return this.users.find(u => {
+      if (!u.phone) return false;
+      const uDigits = u.phone.replace(/[^0-9]/g, '');
+      return uDigits.endsWith(last10) || last10.endsWith(uDigits.slice(-10));
+    }) || null;
+  }
+
+  public async findUserById(id: string): Promise<UserRecord | null> {
+    if (!id) return null;
+    return this.users.find(u => u.id === id) || null;
   }
 
   public async findUserByGoogleId(googleId: string): Promise<UserRecord | null> {
@@ -84,8 +128,8 @@ class PostgresClient {
   }
 
   public async createUser(data: Partial<UserRecord> & { email?: string; phone?: string; name?: string }): Promise<UserRecord> {
-    const email = data.email || '';
-    const phone = data.phone || '';
+    const email = (data.email || '').trim().toLowerCase();
+    const phone = (data.phone || '').trim();
     const firstName = data.firstName || (data.name ? data.name.split(' ')[0] : 'UniQR');
     const lastName = data.lastName || (data.name ? data.name.split(' ').slice(1).join(' ') : 'User');
     const fullName = data.name || `${firstName} ${lastName}`.trim();
@@ -104,10 +148,13 @@ class PostgresClient {
       avatarUrl: data.avatarUrl,
       role: 'user',
       accountStatus: 'active',
+      hasCompletedOnboarding: Boolean(email && phone && (firstName || fullName)),
+      welcomeEmailSent: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     this.users.push(newUser);
+    this.saveUsersToDisk();
     return newUser;
   }
 
@@ -115,8 +162,8 @@ class PostgresClient {
     const user = this.users.find(u => u.id === userId);
     if (!user) return null;
 
-    if (data.email) user.email = data.email;
-    if (data.phone) user.phone = data.phone;
+    if (data.email) user.email = data.email.trim().toLowerCase();
+    if (data.phone) user.phone = data.phone.trim();
     if (data.firstName) user.firstName = data.firstName;
     if (data.lastName) user.lastName = data.lastName;
     if (data.firstName || data.lastName) {
@@ -127,8 +174,16 @@ class PostgresClient {
     if (data.gstin !== undefined) user.gstin = data.gstin;
     if (data.googleId) user.googleId = data.googleId;
     if (data.avatarUrl) user.avatarUrl = data.avatarUrl;
-    user.updatedAt = new Date().toISOString();
+    if (data.hasCompletedOnboarding !== undefined) user.hasCompletedOnboarding = data.hasCompletedOnboarding;
+    if (data.welcomeEmailSent !== undefined) user.welcomeEmailSent = data.welcomeEmailSent;
+    
+    // Auto-mark onboarding completed if both phone and email exist with full name
+    if (user.email && user.phone && (user.firstName || user.name)) {
+      user.hasCompletedOnboarding = true;
+    }
 
+    user.updatedAt = new Date().toISOString();
+    this.saveUsersToDisk();
     return user;
   }
 

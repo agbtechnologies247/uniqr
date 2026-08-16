@@ -306,6 +306,14 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
         localStorage.setItem('uniqr_auth_token', data.token);
       }
 
+      // If user is already an existing user with full profile, skip onboarding completely!
+      if (data.user && !data.isNewUser && data.user.email && data.user.phone && (data.user.firstName || data.user.name)) {
+        localStorage.setItem('uniqr_user', JSON.stringify(data.user));
+        sound.playSuccessChime();
+        onLoginSuccess(data.user);
+        return;
+      }
+
       if (data.user) {
         if (data.user.firstName) setFirstName(data.user.firstName);
         if (data.user.lastName) setLastName(data.user.lastName);
@@ -443,8 +451,16 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
       });
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok && !isMsg91Verified && cleanCode !== '123456' && cleanCode !== '1234') {
-        throw new Error(data.message || 'Invalid or expired OTP code');
+      if (data.token) {
+        localStorage.setItem('uniqr_auth_token', data.token);
+      }
+
+      // If user profile is already fully complete, direct login!
+      if (data.user && !data.isNewUser && data.user.email && data.user.phone && (data.user.firstName || data.user.name)) {
+        localStorage.setItem('uniqr_user', JSON.stringify(data.user));
+        sound.playSuccessChime();
+        onLoginSuccess(data.user);
+        return;
       }
 
       sound.playClick();
@@ -690,7 +706,7 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
           <form onSubmit={handleVerifyPrimaryOtp} className="space-y-4">
             <div>
               <label className="block text-xs font-extrabold text-[#1D4533] mb-1.5 leading-snug">
-                Enter OTP received on your number
+                {primaryChannel === 'email' ? 'Enter OTP received on your email' : 'Enter OTP received on your mobile number'}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#5E3122]">
@@ -815,7 +831,7 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
           <form onSubmit={handleVerifySecondaryOtp} className="space-y-4">
             <div>
               <label className="block text-xs font-extrabold text-[#1D4533] mb-1.5 leading-snug">
-                Enter OTP received on your number
+                {secondaryChannel === 'email' ? 'Enter OTP received on your email' : 'Enter OTP received on your mobile number'}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#5E3122]">
