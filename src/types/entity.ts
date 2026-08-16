@@ -172,6 +172,8 @@ export interface UniversalEntity {
   mfgDate?: string;
   expDate?: string;
   warrantyMonths?: number;
+  warrantyStatus?: string;
+  verificationStatus?: string;
   location?: string;
   supplier?: string;
 }

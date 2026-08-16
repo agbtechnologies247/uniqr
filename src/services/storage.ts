@@ -53,20 +53,11 @@ class StorageService {
 
   // Products
   getProducts(): Product[] {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS) || '[]');
-    // Ensure all seed initial products are present in the inventory list
-    let updated = false;
-    const currentList = [...raw];
-    INITIAL_PRODUCTS.forEach(seedProd => {
-      if (!currentList.some(p => p.id === seedProd.id || p.uniqrCode === seedProd.uniqrCode)) {
-        currentList.unshift(seedProd);
-        updated = true;
-      }
-    });
-    if (updated) {
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(currentList));
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS) || '[]');
+    } catch {
+      return [];
     }
-    return currentList;
   }
 
   getProductById(id: string): Product | undefined {

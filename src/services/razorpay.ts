@@ -12,7 +12,13 @@ interface RazorpayCheckoutOptions {
   amountINR: number;
   userEmail?: string;
   userPhone?: string;
-  onSuccess: (paymentId: string, orderId: string) => void;
+  user?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  onSuccess: (paymentDetails: any, orderId?: string) => void;
+  onFailure?: (err: any) => void;
   onError?: (err: any) => void;
 }
 
@@ -69,8 +75,9 @@ export const triggerRazorpayCheckout = async (options: RazorpayCheckoutOptions) 
       image: '/logo.jpg',
       prefill: {
         method: 'upi',
-        email: options.userEmail || 'agbtechnologies247@gmail.com',
-        contact: options.userPhone || '+919049874780'
+        name: options.user?.name || '',
+        email: options.user?.email || options.userEmail || '',
+        contact: options.user?.phone || options.userPhone || ''
       },
       config: {
         display: {

@@ -44,28 +44,34 @@ export const EcosystemGraph: React.FC<EcosystemGraphProps> = ({
   const [locationFilter, setLocationFilter] = useState<string>('Global');
   const [selectedEcosystemNode, setSelectedEcosystemNode] = useState<string | null>(null);
 
-  const totalEntities = products.length > 0 ? products.length + 12470 : 12482;
-  const totalConnections = 48921;
-  const activeQrCount = 8294;
-  const attentionCount = 37;
+  const totalEntities = products.length;
+  const activeQrCount = products.length;
+  const totalConnections = products.reduce((acc, p) => acc + (p.relationships?.length || 0) + (p.trailEvents?.length || 0), 0);
+  const attentionCount = products.filter(p => p.verificationStatus === 'tampered' || p.warrantyStatus === 'expired').length;
+
+  const productCount = products.filter(p => !p.entityType || p.entityType === 'product').length;
+  const customerCount = products.filter(p => p.entityType === 'customer').length;
+  const assetCount = products.filter(p => p.entityType === 'asset' || p.entityType === 'machine').length;
+  const locationCount = products.filter(p => p.entityType === 'location').length;
+  const docCount = products.filter(p => p.entityType === 'document' || p.entityType === 'certificate').length;
 
   // Ecosystem node definitions for the relationship matrix
   const ecosystemNodes = [
-    { id: 'products', name: 'Products', count: '4,290', icon: Package, color: '#1D4533', bg: '#F9D2BA', status: '92% Healthy' },
-    { id: 'customers', name: 'Customers', count: '3,840', icon: Users, color: '#5E3122', bg: '#F7EAE0', status: '94% Verified' },
-    { id: 'assets', name: 'Assets & Machines', count: '2,180', icon: Boxes, color: '#1D4533', bg: '#F9D2BA', status: '88% Optimal' },
-    { id: 'locations', name: 'Locations & Hubs', count: '1,120', icon: MapPin, color: '#5E3122', bg: '#F7EAE0', status: '99% Active' },
-    { id: 'documents', name: 'Documents & Certs', count: '1,052', icon: FileText, color: '#1D4533', bg: '#F9D2BA', status: '96% Sealed' },
+    { id: 'products', name: 'Products', count: productCount.toString(), icon: Package, color: '#1D4533', bg: '#F9D2BA', status: `${productCount} Registered` },
+    { id: 'customers', name: 'Customers', count: customerCount.toString(), icon: Users, color: '#5E3122', bg: '#F7EAE0', status: `${customerCount} Linked` },
+    { id: 'assets', name: 'Assets & Machines', count: assetCount.toString(), icon: Boxes, color: '#1D4533', bg: '#F9D2BA', status: `${assetCount} Active` },
+    { id: 'locations', name: 'Locations & Hubs', count: locationCount.toString(), icon: MapPin, color: '#5E3122', bg: '#F7EAE0', status: `${locationCount} Geotagged` },
+    { id: 'documents', name: 'Documents & Certs', count: docCount.toString(), icon: FileText, color: '#1D4533', bg: '#F9D2BA', status: `${docCount} Cryptographic` },
   ];
 
-  // Recent ecosystem events
-  const recentActivities = [
-    { id: 'act-1', text: 'New Batch Certificate sealed with SHA-256 ledger for AERO-X Industrial Twin', time: '12 min ago', type: 'seal', icon: ShieldCheck },
-    { id: 'act-2', text: 'Scan anomaly flagged in Pune Hub: 42 rapid scans on single machine token', time: '34 min ago', type: 'alert', icon: AlertCircle },
-    { id: 'act-3', text: 'Digital Passport updated with new calibration certificate for XR-7000 Sensor', time: '1 hr ago', type: 'update', icon: RefreshIcon },
-    { id: 'act-4', text: 'Customer Ownership transfer registered from Foxconn to Apple Park Store', time: '2 hrs ago', type: 'transfer', icon: ArrowUpRight },
-    { id: 'act-5', text: 'Predictive maintenance alert cleared: Hydraulic oil serviced for CAT-320', time: '3 hrs ago', type: 'health', icon: CheckCircle2 },
-  ];
+  // Dynamic ecosystem events extracted from real product ledgers
+  const recentActivities = products.flatMap(p => (p.trailEvents || []).map(evt => ({
+    id: evt.id || `act-${Math.random()}`,
+    text: `${evt.title || evt.action || 'Ledger event'}: ${p.name}`,
+    time: new Date(evt.timestamp || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+    type: 'seal',
+    icon: ShieldCheck
+  }))).slice(0, 5);
 
   function RefreshIcon(props: any) {
     return <Activity className="w-3.5 h-3.5 text-[#1D4533]" {...props} />;

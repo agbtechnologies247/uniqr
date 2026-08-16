@@ -93,6 +93,8 @@ export interface TamperEvidentTrailEvent {
   id: string;
   qrId: string;
   type: string; // e.g. Manufactured, QC Passed, Packed, Dispatched, Sold, Serviced, Disposed
+  title?: string;
+  action?: string;
   module: 'Manufacturing' | 'BOM' | 'Quality' | 'Packaging' | 'Inventory' | 'Warehouse' | 'Logistics' | 'Dealer' | 'Customer' | 'Warranty' | 'Rental' | 'Service' | 'Recall' | 'Disposal';
   timestamp: string;
   location?: string;
@@ -176,6 +178,8 @@ export interface Product {
   location: string;
   supplier: string;
   status: 'Active' | 'Archived' | 'Draft' | 'Recall' | 'Rented' | 'Under Inspection' | 'Repair';
+  verificationStatus?: string;
+  warrantyStatus?: string;
   createdAt: string;
   updatedAt: string;
   connectedApps: string[]; // e.g. ['Enterprise ERP', 'Asset Tracking', 'CRM']
@@ -276,6 +280,9 @@ export interface ScanEvent {
   referral: string;
   appSource: string;
   isRepeat: boolean;
+  status?: string;
+  ip?: string;
+  latency?: string;
 }
 
 export interface SubscriptionTier {
@@ -288,6 +295,7 @@ export interface SubscriptionTier {
   totalAmountINR?: number;
   qrLimitDaily: number; // 0 = unlimited lifetime cap for free
   lifetimeCap?: number;
+  description?: string;
   features: string[];
   isPopular?: boolean;
 }

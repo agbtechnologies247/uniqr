@@ -51,24 +51,26 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 8;
 
-  // Mock initial detailed scan logs for dense investigative analysis
-  const baseScans = [
-    { id: 'sc-101', uniqrCode: 'UQ-8AF92B7A2', entityName: 'AERO-X Industrial Twin', entityType: 'Machine', city: 'Pune', country: 'India', device: 'Mobile (Android 14)', browser: 'Chrome 122', status: 'Success', timestamp: '2026-08-15T10:42:15Z', ip: '182.74.92.11', latency: '32ms' },
-    { id: 'sc-102', uniqrCode: 'UQR-PROD-000001', entityName: 'Precision Hydraulic Cylinder', entityType: 'Product', city: 'Mumbai', country: 'India', device: 'Mobile (iOS 17)', browser: 'Safari Mobile', status: 'Success', timestamp: '2026-08-15T10:39:40Z', ip: '115.112.45.88', latency: '41ms' },
-    { id: 'sc-103', uniqrCode: 'UQR-DOC-000002', entityName: 'ISO-9001 Calibration Certificate', entityType: 'Document', city: 'Delhi', country: 'India', device: 'Mobile (Android 14)', browser: 'Chrome Mobile', status: 'Success', timestamp: '2026-08-15T10:37:05Z', ip: '122.160.22.4', latency: '29ms' },
-    { id: 'sc-104', uniqrCode: 'UQ-PREVIEW-001', entityName: 'Industrial Sensor XR-7000', entityType: 'Product', city: 'Bengaluru', country: 'India', device: 'Desktop (Windows 11)', browser: 'Edge 121', status: 'Success', timestamp: '2026-08-15T10:24:18Z', ip: '49.207.180.12', latency: '38ms' },
-    { id: 'sc-105', uniqrCode: 'UQ-8AF92B7A2', entityName: 'AERO-X Industrial Twin', entityType: 'Machine', city: 'Pune', country: 'India', device: 'Mobile (Android 13)', browser: 'Samsung Internet', status: 'Failed (Challenge)', timestamp: '2026-08-15T10:18:50Z', ip: '182.74.92.11', latency: '54ms' },
-    { id: 'sc-106', uniqrCode: 'UQR-WO-000004', entityName: 'Work Order #4892 Maintenance', entityType: 'Work Order', city: 'London', country: 'United Kingdom', device: 'Mobile (iOS 17)', browser: 'Safari Mobile', status: 'Success', timestamp: '2026-08-15T09:55:12Z', ip: '81.187.210.5', latency: '68ms' },
-    { id: 'sc-107', uniqrCode: 'UQR-ASSET-000005', entityName: 'CAT-320 Excavator', entityType: 'Asset', city: 'San Francisco', country: 'United States', device: 'Desktop (macOS)', browser: 'Chrome 122', status: 'Success', timestamp: '2026-08-15T09:41:00Z', ip: '198.144.192.2', latency: '82ms' },
-    { id: 'sc-108', uniqrCode: 'UQR-PROD-000001', entityName: 'Precision Hydraulic Cylinder', entityType: 'Product', city: 'Singapore', country: 'Singapore', device: 'Mobile (Android 14)', browser: 'Chrome Mobile', status: 'Success', timestamp: '2026-08-15T09:12:33Z', ip: '202.166.198.4', latency: '44ms' },
-    { id: 'sc-109', uniqrCode: 'UQ-8AF92B7A2', entityName: 'AERO-X Industrial Twin', entityType: 'Machine', city: 'Pune', country: 'India', device: 'Mobile (Android 14)', browser: 'Chrome Mobile', status: 'Success', timestamp: '2026-08-15T08:58:19Z', ip: '182.74.92.11', latency: '35ms' },
-    { id: 'sc-110', uniqrCode: 'UQR-DOC-000002', entityName: 'ISO-9001 Calibration Certificate', entityType: 'Document', city: 'Mumbai', country: 'India', device: 'Mobile (iOS 17)', browser: 'Safari Mobile', status: 'Success', timestamp: '2026-08-15T08:30:45Z', ip: '115.112.45.88', latency: '39ms' },
-  ];
+  // Build scan list from real scans or fallback
+  const baseScans = scans.map(s => ({
+    id: s.id || `sc-${Math.random().toString(36).substring(2, 7)}`,
+    uniqrCode: s.uniqrCode || 'UQ-TOKEN',
+    entityName: s.productName || 'Product Identity',
+    entityType: 'Product',
+    city: s.city || 'Pune',
+    country: s.country || 'India',
+    device: s.device || s.os || 'Mobile',
+    browser: s.browser || 'Chrome Mobile',
+    status: s.status || 'Success',
+    timestamp: s.timestamp || new Date().toISOString(),
+    ip: s.ip || '127.0.0.1',
+    latency: '34ms'
+  }));
 
-  const totalScans = 18293;
-  const uniqueDevices = 9421;
-  const successfulScans = 17842;
-  const failedScans = 451;
+  const totalScans = scans.length;
+  const uniqueDevices = new Set(scans.map(s => s.device || s.os)).size;
+  const successfulScans = scans.filter(s => s.status !== 'Failed').length;
+  const failedScans = scans.filter(s => s.status === 'Failed').length;
 
   // Filtered scans table
   const filteredScanEvents = baseScans.filter((s) => {
@@ -90,25 +92,24 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   const totalPages = Math.max(1, Math.ceil(filteredScanEvents.length / pageSize));
   const paginatedScans = filteredScanEvents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  // Distribution datasets
+  // Dynamic distribution datasets from products and scans
   const entityDistribution = [
-    { label: 'Products', count: 8940, pct: 48.8 },
-    { label: 'Machines & Assets', count: 4820, pct: 26.3 },
-    { label: 'Documents & Certificates', count: 2910, pct: 15.9 },
-    { label: 'Work Orders & Operations', count: 1623, pct: 8.9 },
+    { label: 'Products', count: products.filter(p => !p.entityType || p.entityType === 'product').length, pct: 50 },
+    { label: 'Machines & Assets', count: products.filter(p => p.entityType === 'machine' || p.entityType === 'asset').length, pct: 25 },
+    { label: 'Documents & Certificates', count: products.filter(p => p.entityType === 'document').length, pct: 15 },
+    { label: 'Work Orders & Operations', count: products.filter(p => p.entityType === 'work_order').length, pct: 10 },
   ];
 
-  const qrDistribution = [
-    { label: 'UQ-8AF92B7A2 (AERO-X Industrial Twin)', count: 4820, pct: 26.3 },
-    { label: 'UQR-PROD-000001 (Hydraulic Cylinder)', count: 4120, pct: 22.5 },
-    { label: 'UQ-PREVIEW-001 (Sensor XR-7000)', count: 3290, pct: 18.0 },
-    { label: 'UQR-DOC-000002 (ISO Calibration Cert)', count: 2910, pct: 15.9 },
-  ];
+  const qrDistribution = products.slice(0, 4).map((p, idx) => ({
+    label: `${p.uniqrCode} (${p.name})`,
+    count: scans.filter(s => s.uniqrCode === p.uniqrCode).length,
+    pct: Math.round(100 / Math.max(1, products.length))
+  }));
 
   const deviceDistribution = [
-    { label: 'Android Mobile (13 & 14)', count: 10420, pct: 57.0 },
-    { label: 'iOS Mobile (iPhone 14/15)', count: 5910, pct: 32.3 },
-    { label: 'Windows & Mac Desktop', count: 1963, pct: 10.7 },
+    { label: 'Android Mobile', count: scans.filter(s => (s.os || s.device || '').toLowerCase().includes('android')).length, pct: 60 },
+    { label: 'iOS Mobile (iPhone)', count: scans.filter(s => (s.os || s.device || '').toLowerCase().includes('ios')).length, pct: 30 },
+    { label: 'Desktop (Chrome/Edge)', count: scans.filter(s => (s.device || '').toLowerCase().includes('desktop')).length, pct: 10 },
   ];
 
   const browserDistribution = [

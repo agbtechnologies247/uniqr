@@ -994,7 +994,7 @@ export const PassportBuilder: React.FC<PassportBuilderProps> = ({ products = [],
                     <span>Mandatory Platform Branding</span>
                   </div>
                   <p>
-                    "Powered by UniQR — agbtechnologies.com" is automatically pinned to the footer base on all digital twin passport pages.
+                    "Powered by UniQR - agbtechnologies.in" is permanently pinned to the footer base on all digital twin passport pages.
                   </p>
                 </div>
               </ConfigSection>

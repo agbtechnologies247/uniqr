@@ -582,6 +582,19 @@ export const ProductPassport: React.FC<ProductPassportProps> = ({ product: initi
           </button>
         </div>
 
+        {/* PERMANENT UNREMOVABLE FOOTER */}
+        <div className="pt-4 border-t border-[#F9D2BA] text-center text-xs font-semibold text-[#5E3122] select-none">
+          <span>Powered by </span>
+          <a
+            href="https://uniqr.agbtechnologies.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-black text-[#1D4533] underline hover:text-[#5E3122]"
+          >
+            UniQR - agbtechnologies.in
+          </a>
+        </div>
+
         {/* AI Scan Decision & Risk Modal */}
         <AiInsightsModal
           isOpen={isAiModalOpen}

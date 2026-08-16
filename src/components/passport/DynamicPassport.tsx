@@ -899,18 +899,19 @@ export const DynamicPassport: React.FC<DynamicPassportProps> = ({
           {/* MANDATORY: Powered by UniQR — always rendered, never removable */}
           <div style={{
             fontSize: '11px', color: footer.textColor, fontFamily: footer.font,
-            opacity: 0.7, fontWeight: 600,
+            opacity: 0.85, fontWeight: 600,
             display: 'flex', alignItems: 'center', justifyContent: footer.alignment === 'center' ? 'center' : footer.alignment === 'right' ? 'flex-end' : 'flex-start',
             gap: '4px',
+            userSelect: 'none'
           }}>
-            Powered by{' '}
+            <span>Powered by </span>
             <a
-              href="https://agbtechnologies.com"
+              href="https://uniqr.agbtechnologies.in"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: body.accentColor, fontWeight: 700, textDecoration: 'none' }}
+              style={{ color: body.accentColor || '#1D4533', fontWeight: 800, textDecoration: 'underline' }}
             >
-              UniQR — agbtechnologies.com
+              UniQR - agbtechnologies.in
             </a>
           </div>
         </div>
