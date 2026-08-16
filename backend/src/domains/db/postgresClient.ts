@@ -4,9 +4,18 @@ export interface UserRecord {
   id: string;
   email: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  organization?: string;
+  hasGstin?: boolean;
+  gstin?: string;
+  googleId?: string;
+  avatarUrl?: string;
   role: 'admin' | 'user' | 'enterprise';
   accountStatus: 'active' | 'suspended' | 'deactivated';
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface SessionRecord {
@@ -40,10 +49,17 @@ class PostgresClient {
     {
       id: 'usr-admin-001',
       email: 'bhramitp@gmail.com',
-      name: 'Bhramit Patel (AGB Admin)',
+      name: 'Bhramit Patel',
+      firstName: 'Bhramit',
+      lastName: 'Patel',
+      phone: '+919049874780',
+      organization: 'AGB Technologies Pvt. Ltd.',
+      hasGstin: true,
+      gstin: '27AABCA1234F1Z5',
       role: 'admin',
       accountStatus: 'active',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
   ];
 
@@ -52,20 +68,68 @@ class PostgresClient {
   }
 
   public async findUserByEmail(email: string): Promise<UserRecord | null> {
-    return this.users.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
+    if (!email) return null;
+    return this.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase()) || null;
   }
 
-  public async createUser(email: string, name?: string): Promise<UserRecord> {
+  public async findUserByPhone(phone: string): Promise<UserRecord | null> {
+    if (!phone) return null;
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    return this.users.find(u => u.phone && u.phone.replace(/[^0-9]/g, '').includes(cleanPhone)) || null;
+  }
+
+  public async findUserByGoogleId(googleId: string): Promise<UserRecord | null> {
+    if (!googleId) return null;
+    return this.users.find(u => u.googleId === googleId) || null;
+  }
+
+  public async createUser(data: Partial<UserRecord> & { email?: string; phone?: string; name?: string }): Promise<UserRecord> {
+    const email = data.email || '';
+    const phone = data.phone || '';
+    const firstName = data.firstName || (data.name ? data.name.split(' ')[0] : 'UniQR');
+    const lastName = data.lastName || (data.name ? data.name.split(' ').slice(1).join(' ') : 'User');
+    const fullName = data.name || `${firstName} ${lastName}`.trim();
+
     const newUser: UserRecord = {
       id: `usr-${Date.now()}`,
       email,
-      name: name || email.split('@')[0],
+      phone,
+      name: fullName,
+      firstName,
+      lastName,
+      organization: data.organization || 'AGB Technologies Ltd.',
+      hasGstin: data.hasGstin || false,
+      gstin: data.gstin || '',
+      googleId: data.googleId,
+      avatarUrl: data.avatarUrl,
       role: 'user',
       accountStatus: 'active',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     this.users.push(newUser);
     return newUser;
+  }
+
+  public async updateUserProfile(userId: string, data: Partial<UserRecord>): Promise<UserRecord | null> {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) return null;
+
+    if (data.email) user.email = data.email;
+    if (data.phone) user.phone = data.phone;
+    if (data.firstName) user.firstName = data.firstName;
+    if (data.lastName) user.lastName = data.lastName;
+    if (data.firstName || data.lastName) {
+      user.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    }
+    if (data.organization !== undefined) user.organization = data.organization;
+    if (data.hasGstin !== undefined) user.hasGstin = data.hasGstin;
+    if (data.gstin !== undefined) user.gstin = data.gstin;
+    if (data.googleId) user.googleId = data.googleId;
+    if (data.avatarUrl) user.avatarUrl = data.avatarUrl;
+    user.updatedAt = new Date().toISOString();
+
+    return user;
   }
 
   public async createSession(session: SessionRecord): Promise<SessionRecord> {

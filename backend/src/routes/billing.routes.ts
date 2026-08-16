@@ -4,8 +4,8 @@ import { validateBody, createOrderSchema, verifyPaymentSchema } from '../middlew
 
 export const billingRouter = Router();
 
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_live_TQ4RXmcwF6YO6G';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'TcONNMBuGqWB1FEm3kMzY0g3';
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
 
 // POST /api/v1/billing/create-order
 billingRouter.post('/create-order', validateBody(createOrderSchema), async (req: Request, res: Response) => {
@@ -26,7 +26,12 @@ billingRouter.post('/create-order', validateBody(createOrderSchema), async (req:
             amount: amountInPaise,
             currency: 'INR',
             receipt: `rcpt_${Date.now()}`,
-            notes: { planId: planId || 'pro', payment_method: 'UPI_FIRST' }
+            notes: {
+              planId: planId || 'pro',
+              gst_percent: '18%',
+              statutory_tax: 'GST_INVOICING',
+              payment_method: 'UPI_FIRST'
+            }
           })
         });
         const orderData = await response.json();

@@ -18,10 +18,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
     sound.playClick();
     triggerRazorpayCheckout({
       planId,
-      planName,
+      planName: `${planName} (incl. 18% GST)`,
       amountINR: amount,
       onSuccess: (paymentId) => {
-        alert(`Payment successful (${paymentId})! ${planName} plan is now active on your account.`);
+        alert(`Payment successful (${paymentId})! ${planName} plan is now active with 18% GST invoice.`);
         onNavigate('app');
       }
     });
@@ -44,7 +44,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
           </h1>
 
           <p className="text-sm sm:text-base text-[#5E3122] font-semibold leading-relaxed">
-            Choose the right tier for your product catalog — backed by instant Razorpay UPI Checkout and SHA-256 tamper-evident ledgers.
+            Choose the right tier for your product catalog — backed by instant Razorpay UPI Checkout and statutory 18% GST tax invoices.
           </p>
 
           {/* UPI Priority Callout */}
@@ -82,7 +82,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
               </span>
               <div>
                 <div className="text-3xl font-black text-[#1D4533]">₹0</div>
-                <div className="text-[11px] text-[#5E3122] font-semibold mt-0.5">Lifetime Free</div>
+                <div className="text-[11px] text-[#5E3122] font-semibold mt-0.5">Lifetime Free (GST Exempt)</div>
               </div>
 
               <ul className="space-y-2 text-xs text-[#5E3122] font-semibold border-t border-[#F9D2BA] pt-4">
@@ -120,14 +120,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
               </span>
               <div>
                 <div className="text-3xl font-black text-[#1D4533]">₹399</div>
-                <div className="text-[11px] text-[#5E3122] font-semibold mt-0.5">per month</div>
+                <div className="text-[11px] text-[#5E3122] font-semibold mt-0.5">+ 18% GST (₹71.82)</div>
+                <div className="text-xs font-black text-[#1D4533] mt-1">Total: ₹470.82 / mo</div>
               </div>
 
               <ul className="space-y-2 text-xs text-[#5E3122] font-semibold border-t border-[#F9D2BA] pt-4">
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-[#1D4533] shrink-0" />
-                  <span>Everything that comes with free</span>
-                </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-[#1D4533] shrink-0" />
                   <span>Up to 50 Product QRs / Mo</span>
@@ -140,15 +137,19 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
                   <Check className="w-3.5 h-3.5 text-[#1D4533] shrink-0" />
                   <span>Tamper-Evident Trail Ledgers</span>
                 </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-[#1D4533] shrink-0" />
+                  <span>GST Registered Invoicing</span>
+                </li>
               </ul>
             </div>
 
             <button
-              onClick={() => handlePay('pro', 'Pro Growth', 399)}
+              onClick={() => handlePay('pro', 'Pro Growth', 470.82)}
               className="w-full py-3 rounded-xl bg-[#5E3122] hover:bg-[#1D4533] text-[#F7EAE0] font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
             >
               <Zap className="w-3.5 h-3.5 text-[#F9D2BA]" />
-              <span>Pay ₹399 via UPI</span>
+              <span>Pay ₹470.82 via UPI</span>
             </button>
           </div>
 
@@ -164,7 +165,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
               </span>
               <div>
                 <div className="text-3xl font-black text-white">₹999</div>
-                <div className="text-[11px] text-[#F7EAE0]/80 font-semibold mt-0.5">per month</div>
+                <div className="text-[11px] text-[#F7EAE0]/80 font-semibold mt-0.5">+ 18% GST (₹179.82)</div>
+                <div className="text-xs font-black text-[#F9D2BA] mt-1">Total: ₹1,178.82 / mo</div>
               </div>
 
               <ul className="space-y-2 text-xs text-[#F7EAE0]/90 font-semibold border-t border-[#F9D2BA]/30 pt-4">
@@ -180,15 +182,19 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
                   <Check className="w-3.5 h-3.5 text-[#F9D2BA] shrink-0" />
                   <span>AI Decision Engine &amp; ML</span>
                 </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-[#F9D2BA] shrink-0" />
+                  <span>GST Registered Invoicing</span>
+                </li>
               </ul>
             </div>
 
             <button
-              onClick={() => handlePay('business', 'Business Scale', 999)}
+              onClick={() => handlePay('business', 'Business Scale', 1178.82)}
               className="w-full py-3 rounded-xl bg-[#F9D2BA] hover:bg-[#F7EAE0] text-[#1D4533] font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-1.5"
             >
               <Zap className="w-3.5 h-3.5 text-[#1D4533]" />
-              <span>Pay ₹999 via UPI</span>
+              <span>Pay ₹1,178.82 via UPI</span>
             </button>
           </div>
 
@@ -200,7 +206,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
               </span>
               <div>
                 <div className="text-3xl font-black text-[#1D4533]">₹2,999</div>
-                <div className="text-[11px] text-[#5E3122] font-semibold mt-0.5">per month</div>
+                <div className="text-[11px] text-[#5E3122] font-semibold mt-0.5">+ 18% GST (₹539.82)</div>
+                <div className="text-xs font-black text-[#1D4533] mt-1">Total: ₹3,538.82 / mo</div>
               </div>
 
               <ul className="space-y-2 text-xs text-[#5E3122] font-semibold border-t border-[#F9D2BA] pt-4">
@@ -216,15 +223,19 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, onOpenUpgr
                   <Check className="w-3.5 h-3.5 text-[#1D4533] shrink-0" />
                   <span>AI Decision Engine &amp; ML</span>
                 </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-[#1D4533] shrink-0" />
+                  <span>24/7 Phone &amp; Email SLA</span>
+                </li>
               </ul>
             </div>
 
             <button
-              onClick={() => handlePay('factory', 'Factory Scale', 2999)}
+              onClick={() => handlePay('factory', 'Factory Scale', 3538.82)}
               className="w-full py-3 rounded-xl bg-[#1D4533] hover:bg-[#5E3122] text-[#F7EAE0] font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md"
             >
               <Zap className="w-3.5 h-3.5 text-[#F9D2BA]" />
-              <span>Pay ₹2,999 via UPI</span>
+              <span>Pay ₹3,538.82 via UPI</span>
             </button>
           </div>
 

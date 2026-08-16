@@ -689,6 +689,10 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     id: 'free',
     name: 'Starter Free',
     priceINR: 0,
+    basePriceINR: 0,
+    gstPercent: 18,
+    gstAmountINR: 0,
+    totalAmountINR: 0,
     qrLimitDaily: 10,
     lifetimeCap: 10,
     features: [
@@ -702,6 +706,10 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     id: 'pro',
     name: 'Pro Growth',
     priceINR: 399,
+    basePriceINR: 399,
+    gstPercent: 18,
+    gstAmountINR: 71.82,
+    totalAmountINR: 470.82,
     qrLimitDaily: 50,
     features: [
       'Everything that comes with free',
@@ -714,6 +722,10 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     id: 'business',
     name: 'Business Scale',
     priceINR: 999,
+    basePriceINR: 999,
+    gstPercent: 18,
+    gstAmountINR: 179.82,
+    totalAmountINR: 1178.82,
     qrLimitDaily: 500,
     isPopular: true,
     features: [
@@ -726,6 +738,10 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     id: 'factory',
     name: 'Factory Scale',
     priceINR: 2999,
+    basePriceINR: 2999,
+    gstPercent: 18,
+    gstAmountINR: 539.82,
+    totalAmountINR: 3538.82,
     qrLimitDaily: 5000,
     features: [
       'Up to 5,000 Product QRs / Mo',
@@ -736,7 +752,11 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
   {
     id: 'enterprise',
     name: 'Enterprise Custom',
-    priceINR: 0,
+    priceINR: 9999,
+    basePriceINR: 9999,
+    gstPercent: 18,
+    gstAmountINR: 1799.82,
+    totalAmountINR: 11798.82,
     qrLimitDaily: 99999,
     features: [
       'Unlimited Product Identifiers',

@@ -88,7 +88,10 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
     starter: {
       id: 'free',
       name: 'Starter Free',
+      basePrice: '₹0',
+      gst: '₹0',
       price: '₹0',
+      total: '₹0',
       cycle: 'Lifetime Free',
       amountINR: 0,
       desc: 'Basic product identification for testing and personal cataloging.',
@@ -103,90 +106,107 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
         { label: 'Intelligence Graph', value: 'Basic Nodes' },
         { label: 'API Limits', value: '100 req / day' },
         { label: 'Team Seats', value: '1 User' },
+        { label: 'GST Tax (18%)', value: '₹0.00 (Exempt)' },
         { label: 'Support SLA', value: 'Community Support' }
       ]
     },
     pro: {
       id: 'pro',
       name: 'Pro Growth',
-      price: '₹399',
-      cycle: 'per month',
-      amountINR: 399,
+      basePrice: '₹399',
+      gst: '₹71.82',
+      price: '₹470.82',
+      total: '₹470.82',
+      cycle: 'per month (incl. 18% GST)',
+      amountINR: 470.82,
       desc: 'Growing businesses needing tamper-evident ledgers & high-res exports.',
       badge: 'Popular for SMB',
       badgeBg: 'bg-[#F9D2BA] text-[#1D4533]',
       features: [
         { label: 'Monthly QR Codes', value: '50 QRs / month' },
+        { label: 'Base Plan Fee', value: '₹399.00 / month' },
+        { label: 'GST Tax (18%)', value: '+₹71.82 (CGST 9% + SGST 9%)' },
+        { label: 'Total Payable', value: '₹470.82 / month' },
         { label: 'Export Resolution', value: '8192px Ultra High Res' },
         { label: 'Tamper-Evident Ledgers', value: '✓ Cryptographic Ledger' },
-        { label: 'AI Decision Engine', value: 'Not Included' },
         { label: 'Scan Analytics', value: '✓ 30-Day Deep Geo' },
         { label: 'Intelligence Graph', value: '✓ Relationship Graph' },
         { label: 'API Limits', value: '5,000 req / day' },
-        { label: 'Team Seats', value: '3 Users' },
         { label: 'Support SLA', value: 'Standard Email SLA' }
       ]
     },
     biz: {
       id: 'business',
       name: 'Business Scale',
-      price: '₹999',
-      cycle: 'per month',
-      amountINR: 999,
+      basePrice: '₹999',
+      gst: '₹179.82',
+      price: '₹1,178.82',
+      total: '₹1,178.82',
+      cycle: 'per month (incl. 18% GST)',
+      amountINR: 1178.82,
       desc: 'Multi-category manufacturers with AI decision engine & laser vector engraving.',
       badge: 'Most Popular',
       badgeBg: 'bg-[#1D4533] text-[#F9D2BA]',
       features: [
         { label: 'Monthly QR Codes', value: '500 QRs / month' },
+        { label: 'Base Plan Fee', value: '₹999.00 / month' },
+        { label: 'GST Tax (18%)', value: '+₹179.82 (CGST 9% + SGST 9%)' },
+        { label: 'Total Payable', value: '₹1,178.82 / month' },
         { label: 'Export Resolution', value: 'Laser & Vector SVG' },
         { label: 'Tamper-Evident Ledgers', value: '✓ SHA-256 Audit Trail' },
         { label: 'AI Decision Engine', value: '✓ Realtime ML Classifier' },
         { label: 'Scan Analytics', value: '✓ 90-Day Realtime Analytics' },
         { label: 'Intelligence Graph', value: '✓ Neo4j Graph Cluster' },
-        { label: 'API Limits', value: '50,000 req / day' },
-        { label: 'Team Seats', value: '10 Users' },
         { label: 'Support SLA', value: 'Priority Email & Chat SLA' }
       ]
     },
     factory: {
       id: 'factory',
       name: 'Factory Scale',
-      price: '₹2,999',
-      cycle: 'per month',
-      amountINR: 2999,
+      basePrice: '₹2,999',
+      gst: '₹539.82',
+      price: '₹3,538.82',
+      total: '₹3,538.82',
+      cycle: 'per month (incl. 18% GST)',
+      amountINR: 3538.82,
       desc: 'Mass-production assembly plants with 5,000 monthly QRs & 24/7 dedicated SLA.',
       badge: 'Industrial Scale',
       badgeBg: 'bg-[#5E3122] text-[#F7EAE0]',
       features: [
         { label: 'Monthly QR Codes', value: '5,000 QRs / month' },
+        { label: 'Base Plan Fee', value: '₹2,999.00 / month' },
+        { label: 'GST Tax (18%)', value: '+₹539.82 (CGST 9% + SGST 9%)' },
+        { label: 'Total Payable', value: '₹3,538.82 / month' },
         { label: 'Export Resolution', value: 'Laser & Vector DXF / SVG' },
         { label: 'Tamper-Evident Ledgers', value: '✓ Merkle Root Attestation' },
         { label: 'AI Decision Engine', value: '✓ Realtime ML Cluster' },
         { label: 'Scan Analytics', value: '✓ 1-Year Deep History' },
-        { label: 'Intelligence Graph', value: '✓ Enterprise Topology' },
         { label: 'API Limits', value: '500,000 req / day' },
-        { label: 'Team Seats', value: '25 Users' },
         { label: 'Support SLA', value: '24/7 Phone & Email SLA' }
       ]
     },
     ent: {
       id: 'enterprise',
       name: 'Enterprise Custom',
-      price: 'Custom',
-      cycle: 'Annual License',
-      amountINR: 9999,
+      basePrice: '₹9,999',
+      gst: '₹1,799.82',
+      price: '₹11,798.82',
+      total: '₹11,798.82',
+      cycle: 'Annual License (incl. 18% GST)',
+      amountINR: 11798.82,
       desc: 'Full private cloud deployment, dedicated Merkle ledger & custom ERP integration.',
       badge: 'Custom ERP',
       badgeBg: 'bg-[#1D4533] text-[#F7EAE0]',
       features: [
         { label: 'Monthly QR Codes', value: 'Unlimited Dynamic QRs' },
+        { label: 'Base Plan Fee', value: '₹9,999.00 / month' },
+        { label: 'GST Tax (18%)', value: '+₹1,799.82 (18% IGST)' },
+        { label: 'Total Payable', value: '₹11,798.82 / month' },
         { label: 'Export Resolution', value: 'CAD DXF & Custom Vectors' },
         { label: 'Tamper-Evident Ledgers', value: '✓ Dedicated Private Merkle' },
         { label: 'AI Decision Engine', value: '✓ Custom ML Model Tuning' },
         { label: 'Scan Analytics', value: '✓ Unlimited Realtime Feeds' },
         { label: 'Intelligence Graph', value: '✓ Dedicated Graph DB Cluster' },
-        { label: 'API Limits', value: 'Dedicated Gateway (No Limit)' },
-        { label: 'Team Seats', value: 'Unlimited Enterprise Users' },
         { label: 'Support SLA', value: 'Dedicated Account Manager' }
       ]
     }
@@ -202,7 +222,7 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
     try {
       await triggerRazorpayCheckout({
         planId,
-        planName,
+        planName: `${planName} (incl. 18% GST)`,
         amountINR: amount,
         userEmail: 'admin@agbtechnologies.in',
         userPhone: '+919049874780',
@@ -210,7 +230,7 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
           setIsProcessingUpgrade(false);
           setIsCompareModalOpen(false);
           sound.playSuccessChime();
-          alert(`Payment successful (${paymentId})! ${planName} is now active.`);
+          alert(`Payment successful (${paymentId})! ${planName} is now active with 18% GST invoice generated.`);
         },
         onError: () => {
           setIsProcessingUpgrade(false);
@@ -223,12 +243,12 @@ export const UserSubscriptionPage: React.FC<UserSubscriptionPageProps> = ({
 
   const handleDownloadReceipt = (inv: typeof billingInvoices[0]) => {
     sound.playClick();
-    const content = `UniQR Tax Invoice\nInvoice ID: ${inv.id}\nDate: ${inv.date}\nDescription: ${inv.description}\nAmount Paid: ${inv.amount}\nStatus: ${inv.status}\nCustomer: AGB Technologies Pvt. Ltd.\nGSTIN: 27AABCA1234F1Z5\nPayment Mode: UPI / Razorpay`;
+    const content = `======================================================\nUniQR Statutory GST Tax Invoice & Subscription Receipt\n======================================================\nInvoice ID:     ${inv.id}\nInvoice Date:   ${inv.date}\nDescription:    ${inv.description}\n\nBase Price:     ₹338.14\nCGST (9%):      ₹30.43\nSGST (9%):      ₹30.43\nTotal 18% GST:  ₹60.86\nTotal Paid:     ${inv.amount} (INR)\n\nPayment Status: ${inv.status}\nPayment Method: UPI / Razorpay Live Gateway\n\nSupplier:       AGB Technologies Private Limited\nSupplier GSTIN: 27AABCA1234F1Z5\nPlace of Supply: Maharashtra (27)\nSAC Code:       998313 (Information Technology Software Services)\n\nCustomer:       AGB Industrial Equipment Ltd.\nCustomer GSTIN: 27AABCA8841Z1\n======================================================`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `UniQR_Invoice_${inv.id}.txt`;
+    a.download = `UniQR_GST_Invoice_${inv.id}.txt`;
     a.click();
     window.URL.revokeObjectURL(url);
   };

@@ -282,6 +282,10 @@ export interface SubscriptionTier {
   id: 'free' | 'starter' | 'pro' | 'business' | 'factory' | 'enterprise';
   name: string;
   priceINR: number;
+  basePriceINR?: number;
+  gstPercent?: number; // 18%
+  gstAmountINR?: number;
+  totalAmountINR?: number;
   qrLimitDaily: number; // 0 = unlimited lifetime cap for free
   lifetimeCap?: number;
   features: string[];

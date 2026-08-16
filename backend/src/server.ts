@@ -9,7 +9,7 @@ import cookieParser from 'cookie-parser';
 import { requestLogger } from './middleware/logger.js';
 
 import { UNIVERSAL_SEED_DATA, DEMO_COMPANY_NAME } from './domains/entities/universalSeedData.js';
-import { authRouter } from './routes/auth.routes.js';
+import { authRouter, decodeJwtPayload } from './routes/auth.routes.js';
 import { createProductRouter } from './routes/product.routes.js';
 import { createTrailRouter } from './routes/trail.routes.js';
 import { billingRouter } from './routes/billing.routes.js';
@@ -17,24 +17,35 @@ import { createAnalyticsRouter } from './routes/analytics.routes.js';
 import { createResolveRouter } from './routes/resolve.routes.js';
 import { createDeveloperRouter } from './routes/developer.routes.js';
 import { createPassportRouter } from './routes/passport.routes.js';
+import { postgresClient } from './domains/db/postgresClient.js';
+import { sessionEngine } from './domains/auth/sessionEngine.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load .env variables
-const envPath = path.resolve(__dirname, '../.env');
-if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf-8');
-  for (const line of envContent.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
-      const idx = trimmed.indexOf('=');
-      const key = trimmed.substring(0, idx).trim();
-      const val = trimmed.substring(idx + 1).trim();
-      if (!process.env[key]) {
-        process.env[key] = val;
+const possibleEnvPaths = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'backend/.env'),
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '.env')
+];
+
+for (const p of possibleEnvPaths) {
+  if (fs.existsSync(p)) {
+    const envContent = fs.readFileSync(p, 'utf-8');
+    for (const line of envContent.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const idx = trimmed.indexOf('=');
+        const key = trimmed.substring(0, idx).trim();
+        const val = trimmed.substring(idx + 1).trim();
+        if (!process.env[key]) {
+          process.env[key] = val;
+        }
       }
     }
+    break;
   }
 }
 
@@ -357,6 +368,140 @@ app.get('/api/v1/qr/size-presets', (req: Request, res: Response) => {
 
 // ---- Mount Modular Domain Routers ----
 app.use('/api/v1/auth', authRouter);
+app.use('/api/auth', authRouter); // Also mount at /api/auth for OAuth callbacks
+
+// Google OAuth Callback Redirect Endpoint
+app.get(['/api/auth/callback/google', '/api/v1/auth/google/callback', '/api/v1/auth/callback/google'], async (req: Request, res: Response) => {
+  const code = req.query.code as string;
+  if (!code) {
+    return res.redirect('/app/auth?error=no_code');
+  }
+
+  let returnOrigin = 'https://uniqr.agbtechnologies.in';
+  try {
+    if (req.query.state) {
+      const parsedState = JSON.parse(decodeURIComponent(req.query.state as string));
+      if (parsedState.origin && (parsedState.origin.includes('localhost') || parsedState.origin.includes('127.0.0.1') || parsedState.origin.includes('agbtechnologies.in'))) {
+        returnOrigin = parsedState.origin;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+    const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+    
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: 'https://uniqr.agbtechnologies.in/api/auth/callback/google',
+        grant_type: 'authorization_code'
+      })
+    });
+    const tokenData = await tokenRes.json();
+    let googleUser: any = null;
+
+    if (tokenData.access_token) {
+      const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` }
+      });
+      googleUser = await userRes.json();
+    } else if (tokenData.id_token) {
+      googleUser = decodeJwtPayload(tokenData.id_token);
+    }
+
+    if (googleUser && googleUser.email) {
+      const email = googleUser.email.toLowerCase().trim();
+      let user = await postgresClient.findUserByEmail(email);
+      const firstName = googleUser.given_name || (googleUser.name ? googleUser.name.split(' ')[0] : email.split('@')[0]);
+      const lastName = googleUser.family_name || (googleUser.name ? googleUser.name.split(' ').slice(1).join(' ') : '');
+      const fullName = googleUser.name || `${firstName} ${lastName}`.trim();
+      const avatarUrl = googleUser.picture || '';
+
+      if (!user) {
+        user = await postgresClient.createUser({
+          email,
+          name: fullName,
+          firstName,
+          lastName,
+          googleId: googleUser.sub,
+          avatarUrl
+        });
+      } else {
+        await postgresClient.updateUserProfile(user.id, {
+          googleId: googleUser.sub,
+          avatarUrl: avatarUrl || user.avatarUrl,
+          firstName: user.firstName || firstName,
+          lastName: user.lastName || lastName
+        });
+      }
+
+      const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+      const userAgent = req.headers['user-agent'] || 'Unknown Browser';
+      const sessionContext = await sessionEngine.rotateSession('', user, clientIp, userAgent);
+
+      res.cookie('uq_session', sessionContext.rawToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/'
+      });
+
+      console.log(`[GOOGLE OAUTH REDIRECT SUCCESS] User: ${user.email} (${user.name}) -> Returning to: ${returnOrigin}`);
+
+      const userJson = JSON.stringify({
+        id: user.id,
+        email: user.email,
+        phone: user.phone || '',
+        name: user.name,
+        firstName: user.firstName || firstName,
+        lastName: user.lastName || lastName,
+        organization: user.organization || 'AGB Technologies Ltd.',
+        hasGstin: user.hasGstin || false,
+        gstin: user.gstin || '',
+        avatarUrl: user.avatarUrl || avatarUrl,
+        role: user.role,
+        requiresPhone: !user.phone
+      });
+
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>UniQR Authentication</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        </head>
+        <body style="background:#0E1A14;color:#F7EAE0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+          <div style="text-align:center;padding:24px;border:2px solid #F9D2BA;border-radius:24px;background:#1D4533;max-width:380px;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
+            <img src="/logo.jpg" style="width:60px;height:60px;border-radius:16px;margin-bottom:12px;" />
+            <h2 style="margin:0 0 8px 0;font-size:20px;color:#F9D2BA;">⚡ Google Sign-In Verified</h2>
+            <p style="margin:0 0 16px 0;font-size:13px;color:#F7EAE0;opacity:0.9;">Welcome, <strong>${fullName}</strong>! Redirecting to your workspace...</p>
+            <div style="font-size:11px;opacity:0.7;">Account: ${email}</div>
+          </div>
+          <script>
+            try {
+              localStorage.setItem('uniqr_auth_token', '${sessionContext.rawToken}');
+              localStorage.setItem('uniqr_user', JSON.stringify(${userJson}));
+            } catch (e) {}
+            setTimeout(() => {
+              window.location.href = '${returnOrigin}/app/dashboard';
+            }, 600);
+          </script>
+        </body>
+        </html>
+      `);
+    }
+  } catch (e: any) {
+    console.error('[GOOGLE CALLBACK ERROR]', e.message);
+  }
+  return res.redirect(`${returnOrigin}/app/auth?error=google_oauth_failed`);
+});
+
 app.use('/api/v1', createProductRouter(db, saveDatabase, getOrCreateProduct));
 app.use('/api/v1', createTrailRouter(db, saveDatabase, getOrCreateProduct));
 app.use('/api/v1/billing', billingRouter);

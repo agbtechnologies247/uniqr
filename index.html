@@ -11,6 +11,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Poppins:wght@400;600;700;800&family=Nunito+Sans:wght@400;600;700;800&family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&family=Playfair+Display:wght@400;700;800&display=swap" rel="stylesheet">
+    <!-- Google Identity Services SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- MSG91 OTP Widget SDK -->
+    <script type="text/javascript">
+      window.configuration = {
+        widgetId: "3668706b324a313332383434",
+        tokenAuth: "559789TIkWXRukUxN6a7db525P1",
+        exposeMethods: true,
+        success: function(data) {
+          console.log('[MSG91 OTP SUCCESS]', data);
+        },
+        failure: function(error) {
+          console.log('[MSG91 OTP FAILURE]', error);
+        }
+      };
+    </script>
+    <script type="text/javascript" onload="if (window.initSendOTP && window.configuration) { window.initSendOTP(window.configuration); }" src="https://verify.msg91.com/otp-provider.js"></script>
     <title>UNIQR - Living Product Identity Platform</title>
   </head>
   <body class="bg-[#F7EAE0] text-[#5E3122] antialiased selection:bg-[#1D4533] selection:text-[#F7EAE0] overflow-x-hidden min-h-screen">
