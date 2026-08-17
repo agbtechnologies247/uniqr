@@ -17,6 +17,7 @@ import { createAnalyticsRouter } from './routes/analytics.routes.js';
 import { createResolveRouter } from './routes/resolve.routes.js';
 import { createDeveloperRouter } from './routes/developer.routes.js';
 import { createPassportRouter } from './routes/passport.routes.js';
+import { blobRouter } from './routes/blobRoutes.js';
 import { postgresClient } from './domains/db/postgresClient.js';
 import { sessionEngine } from './domains/auth/sessionEngine.js';
 
@@ -65,6 +66,12 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(requestLogger);
+
+const UPLOADS_ROOT = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(UPLOADS_ROOT)) {
+  fs.mkdirSync(UPLOADS_ROOT, { recursive: true });
+}
+app.use('/uploads', express.static(UPLOADS_ROOT));
 
 const DATA_FILE = path.join(__dirname, 'db.json');
 
@@ -509,6 +516,7 @@ app.use('/api/v1', createAnalyticsRouter(db, saveDatabase));
 app.use('/api/v1', createResolveRouter(getOrCreateProduct));
 app.use('/api/v1', createDeveloperRouter(db, saveDatabase, getOrCreateProduct));
 app.use('/api/v1', createPassportRouter(DATA_FILE));
+app.use('/api/v1/blobs', blobRouter);
 
 app.listen(PORT, () => {
   console.log(`🚀 UniQR Digital Identity Engine running on port ${PORT}`);

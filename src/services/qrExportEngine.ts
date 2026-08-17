@@ -132,6 +132,10 @@ export interface QrRenderOptions {
   gradientColor?: string;
   logoUrl?: string;
   customTargetUrl?: string;
+  /** QR Error Correction Level: L=7%, M=15%, Q=25%, H=30% recovery */
+  errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
+  /** QR module margin (quiet zone in modules). Default 2. */
+  margin?: number;
 }
 
 export const getQrTargetUrl = (tokenOrCode: string, customUrl?: string): string => {
@@ -155,12 +159,12 @@ export const drawQrToCanvasAsync = async (
 
   await QRCode.toCanvas(canvas, targetUrl, {
     width: size,
-    margin: 2,
+    margin: options.margin ?? 2,
     color: {
       dark: options.fgColor,
       light: options.transparentBg ? '#00000000' : options.bgColor
     },
-    errorCorrectionLevel: 'H'
+    errorCorrectionLevel: options.errorCorrectionLevel || 'H'
   });
 };
 
@@ -175,12 +179,12 @@ export const generateSVGStringAsync = async (
   const svgStr = await QRCode.toString(targetUrl, {
     type: 'svg',
     width: size,
-    margin: 2,
+    margin: options.margin ?? 2,
     color: {
       dark: options.fgColor,
       light: options.transparentBg ? '#00000000' : options.bgColor
     },
-    errorCorrectionLevel: 'H'
+    errorCorrectionLevel: options.errorCorrectionLevel || 'H'
   });
 
   return svgStr;

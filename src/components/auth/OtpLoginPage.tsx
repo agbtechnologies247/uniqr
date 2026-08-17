@@ -546,6 +546,11 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        if (data.error === 'PHONE_EMAIL_LIMIT_EXCEEDED') {
+          setErrorMsg(`LIMIT_EXCEEDED::${data.message || 'Phone number limit reached.'}`);
+          setLoading(false);
+          return;
+        }
         throw new Error(data.message || 'Failed to save profile');
       }
 
@@ -611,12 +616,33 @@ export const OtpLoginPage: React.FC<OtpLoginPageProps> = ({ onLoginSuccess }) =>
         </div>
 
         {/* ALERTS */}
-        {errorMsg && (
+        {errorMsg && errorMsg.startsWith('LIMIT_EXCEEDED::') ? (
+          <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-xl sm:rounded-2xl space-y-2.5 animate-in fade-in">
+            <div className="flex items-start gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L3.07 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+              </div>
+              <div>
+                <p className="text-xs font-extrabold text-amber-900">Account Limit Reached</p>
+                <p className="text-[11px] text-amber-800 font-semibold mt-0.5 leading-snug">
+                  {errorMsg.replace('LIMIT_EXCEEDED::', '')}
+                </p>
+              </div>
+            </div>
+            <a
+              href="mailto:sales@agbtechnologies.com?subject=UniQR Account Expansion Request"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs transition-colors shadow-sm"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              <span>Contact Sales — sales@agbtechnologies.com</span>
+            </a>
+          </div>
+        ) : errorMsg ? (
           <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl sm:rounded-2xl text-xs font-semibold flex items-center gap-2 animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span className="leading-snug">{errorMsg}</span>
           </div>
-        )}
+        ) : null}
 
         {successMsg && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl sm:rounded-2xl text-xs font-semibold flex items-center gap-2 animate-in fade-in">

@@ -126,6 +126,16 @@ authRouter.post('/verify-otp', async (req: Request, res: Response) => {
 
     if (!user) {
       isNewUser = true;
+
+      // ─── Phone-Email Guardrail ───────────────────────────────────────────
+      // If registering an email and a phone is also provided (or vice versa),
+      // check that fewer than 3 emails are already linked to this phone.
+      if (!isEmail) {
+        // Phone-first registration — new phone user, allowed (we create with phone only)
+      } else {
+        // Email-first — check if the future phone link would exceed limit (deferred to complete-profile)
+      }
+
       user = await postgresClient.createUser({
         email: isEmail ? cleanTarget : '',
         phone: !isEmail ? cleanTarget : '',
@@ -192,6 +202,30 @@ authRouter.post('/complete-profile', async (req: Request, res: Response) => {
 
     const cleanEmail = (email || '').toLowerCase().trim();
     const cleanPhone = (phone || '').trim();
+
+    // ─── Phone-Email Guardrail ───────────────────────────────────────────────
+    // A phone number can be linked to at most 3 different email accounts.
+    if (cleanPhone && cleanEmail) {
+      const existing = await postgresClient.findUserByPhone(cleanPhone);
+      // Only block if this is a NEW account pairing (existing user updating their own profile is fine)
+      const sessionUserId = req.cookies?.uq_session
+        ? (await sessionEngine.validateSessionToken(req.cookies.uq_session))?.user.id
+        : null;
+
+      // If no existing user by phone, or the existing user is NOT the session user (i.e., different account),
+      // and the limit is already at 3 — block.
+      if (!existing || existing.email !== cleanEmail) {
+        const { allowed, count } = postgresClient.checkPhoneEmailLimit(cleanPhone);
+        if (!allowed) {
+          return res.status(429).json({
+            error: 'PHONE_EMAIL_LIMIT_EXCEEDED',
+            message: `This mobile number already has ${count} registered email accounts. A maximum of 3 email accounts are allowed per phone number. Please contact sales to extend your account.`,
+            count,
+            contactSales: 'sales@agbtechnologies.com'
+          });
+        }
+      }
+    }
 
     let user = cleanEmail ? await postgresClient.findUserByEmail(cleanEmail) : (cleanPhone ? await postgresClient.findUserByPhone(cleanPhone) : null);
 

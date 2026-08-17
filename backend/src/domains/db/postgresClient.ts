@@ -2,6 +2,16 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
+export interface BlobRecord {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  linkedProductId?: string;
+  createdAt: string;
+}
+
 export interface UserRecord {
   id: string;
   email: string;
@@ -18,6 +28,7 @@ export interface UserRecord {
   accountStatus: 'active' | 'suspended' | 'deactivated';
   hasCompletedOnboarding?: boolean;
   welcomeEmailSent?: boolean;
+  blobs?: BlobRecord[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -231,6 +242,62 @@ class PostgresClient {
       }
     }
     return count;
+  }
+
+  // ─── Phone-Email Guardrail ───────────────────────────────────────────────
+  /**
+   * Count distinct registered email accounts that share the same last-10 phone digits.
+   * Used to enforce max 3 emails per phone number.
+   */
+  public countEmailsByPhone(phone: string): number {
+    if (!phone) return 0;
+    const digits = phone.replace(/[^0-9]/g, '');
+    const last10 = digits.slice(-10);
+    if (last10.length < 10) return 0;
+
+    return this.users.filter(u => {
+      if (!u.phone || !u.email) return false;
+      const uDigits = u.phone.replace(/[^0-9]/g, '');
+      return uDigits.endsWith(last10);
+    }).length;
+  }
+
+  public checkPhoneEmailLimit(phone: string): { allowed: boolean; count: number } {
+    const count = this.countEmailsByPhone(phone);
+    return { allowed: count < 3, count };
+  }
+
+  // ─── Blob Storage ────────────────────────────────────────────────────────
+  public async addBlob(userId: string, blob: Omit<BlobRecord, 'id' | 'createdAt'>): Promise<BlobRecord> {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) throw new Error('User not found');
+    if (!user.blobs) user.blobs = [];
+
+    const newBlob: BlobRecord = {
+      id: `blob-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      ...blob,
+      createdAt: new Date().toISOString()
+    };
+    user.blobs.push(newBlob);
+    this.saveUsersToDisk();
+    return newBlob;
+  }
+
+  public async getUserBlobs(userId: string): Promise<BlobRecord[]> {
+    const user = this.users.find(u => u.id === userId);
+    return user?.blobs || [];
+  }
+
+  public async deleteBlob(userId: string, blobId: string): Promise<boolean> {
+    const user = this.users.find(u => u.id === userId);
+    if (!user || !user.blobs) return false;
+    const before = user.blobs.length;
+    user.blobs = user.blobs.filter(b => b.id !== blobId);
+    if (user.blobs.length < before) {
+      this.saveUsersToDisk();
+      return true;
+    }
+    return false;
   }
 }
 
